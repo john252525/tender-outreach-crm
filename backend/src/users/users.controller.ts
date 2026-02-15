@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   ClassSerializerInterceptor,
   UseInterceptors,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -17,7 +18,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Role } from '../common/enums/role.enum';
+import { User } from './entities/user.entity';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -51,11 +54,24 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
+    @CurrentUser() currentUser: User,
   ) {
+    const isSelf = currentUser.id === id;
+    const isAdmin = currentUser.role === Role.ADMIN;
+
+    if (!isSelf && !isAdmin) {
+      throw new ForbiddenException('Недостаточно прав для выполнения действия');
+    }
+
+    // Non-admins can only update their own name and phone
+    if (isSelf && !isAdmin) {
+      const { firstName, lastName, phone } = dto;
+      return this.usersService.update(id, { firstName, lastName, phone });
+    }
+
     return this.usersService.update(id, dto);
   }
 
