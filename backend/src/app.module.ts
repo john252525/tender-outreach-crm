@@ -15,6 +15,8 @@ import { UsersModule } from './users/users.module';
       database: process.env.DATABASE_URL ? undefined : (process.env.DB_NAME || 'admin_panel'),
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
+      migrationsRun: true,
+      migrations: [__dirname + '/migrations/*.{ts,js}'],
       ssl: process.env.DATABASE_URL
         ? { rejectUnauthorized: false }
         : false,
