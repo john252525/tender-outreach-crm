@@ -16,8 +16,7 @@
 ## Шаг 2. Добавление PostgreSQL
 
 1. Внутри проекта нажми **"+ New"** → **"Database"** → **"Add PostgreSQL"**
-2. Railway автоматически создаст базу данных
-3. Скопируй `DATABASE_URL` из раздела **Variables** → **Connect** (формат: `postgresql://...`)
+2. Railway автоматически создаст базу данных и переменные (`PGUSER`, `POSTGRES_PASSWORD`, `PGDATABASE` и т.д.)
 
 ## Шаг 3. Деплой Backend
 
@@ -30,11 +29,13 @@
 ```
 PORT=4000
 NODE_ENV=production
-DATABASE_URL=<скопируй из PostgreSQL сервиса>
+DATABASE_URL=postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
 JWT_SECRET=<сгенерируй длинный случайный ключ>
 JWT_REFRESH_SECRET=<сгенерируй другой длинный ключ>
 FRONTEND_URL=https://<домен-фронтенда>.up.railway.app
 ```
+
+> `DATABASE_URL` использует Reference Variables — Railway автоматически подставит реальные значения из PostgreSQL сервиса. Это надёжнее прямой ссылки: если база пересоздаётся, значения обновятся автоматически.
 
 > Для генерации ключей: `openssl rand -hex 32`
 
@@ -118,7 +119,7 @@ npm run dev
 |---|---|---|
 | `PORT` | Порт сервера | `4000` |
 | `NODE_ENV` | Окружение | `production` |
-| `DATABASE_URL` | URL PostgreSQL | `postgresql://user:pass@host:5432/db` |
+| `DATABASE_URL` | URL PostgreSQL (Reference Variables) | `postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}` |
 | `JWT_SECRET` | Секрет JWT | Случайная строка 64+ символов |
 | `JWT_REFRESH_SECRET` | Секрет refresh токена | Случайная строка 64+ символов |
 | `FRONTEND_URL` | URL фронтенда (CORS) | `https://frontend.up.railway.app` |
