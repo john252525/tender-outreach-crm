@@ -27,7 +27,7 @@ export class SshServer {
   @Column()
   username: string;
 
-  @Column({ name: 'encrypted_password', nullable: true })
+  @Column({ name: 'encrypted_password', type: 'text', nullable: true })
   @Exclude()
   encryptedPassword: string | null;
 
