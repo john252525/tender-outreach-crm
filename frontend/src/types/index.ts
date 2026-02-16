@@ -42,3 +42,21 @@ export interface PaginatedResponse<T> {
   data: T[];
   total: number;
 }
+
+export interface SshServer {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  authType: 'password' | 'key';
+  createdAt: string;
+}
+
+export interface DirectoryEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  modifiedAt: string;
+}

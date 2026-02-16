@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
+import SshSidebarSection from './ssh-sidebar-section';
 
 interface NavItem {
   label: string;
@@ -105,6 +106,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
             </Link>
           );
         })}
+
+        <SshSidebarSection />
       </nav>
 
       <div className="px-3 py-4 border-t border-white/10">

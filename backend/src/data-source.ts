@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { User } from './users/entities/user.entity';
+import { SshServer } from './ssh-servers/entities/ssh-server.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -9,7 +10,7 @@ export default new DataSource({
   username: process.env.DATABASE_URL ? undefined : (process.env.DB_USERNAME || 'postgres'),
   password: process.env.DATABASE_URL ? undefined : (process.env.DB_PASSWORD || 'postgres'),
   database: process.env.DATABASE_URL ? undefined : (process.env.DB_NAME || 'admin_panel'),
-  entities: [User],
+  entities: [User, SshServer],
   migrations: [__dirname + '/migrations/*.{ts,js}'],
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
