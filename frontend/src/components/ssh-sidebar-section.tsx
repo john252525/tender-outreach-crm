@@ -143,6 +143,7 @@ export default function SshSidebarSection() {
   const [selectedPath, setSelectedPath] = useState('/');
   const [sshExpanded, setSshExpanded] = useState(false);
   const [connectingServer, setConnectingServer] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const fetchServers = useCallback(async () => {
     try {
@@ -183,7 +184,9 @@ export default function SshSidebarSection() {
         return next;
       });
     } catch (err) {
-      console.error(`Failed to load ${path}:`, err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Failed to load ${path}:`, msg);
+      setConnectionError(msg);
     } finally {
       setLoadingPaths((prev) => {
         const next = new Set(prev);
@@ -200,6 +203,7 @@ export default function SshSidebarSection() {
     setChildrenMap(new Map());
     setSelectedPath('/');
     setConnectingServer(serverId);
+    setConnectionError(null);
     saveSelectedServerId(serverId);
 
     // Restore expanded paths from localStorage
@@ -329,6 +333,12 @@ export default function SshSidebarSection() {
                     <Trash2 size={12} />
                   </button>
                 </div>
+
+                {selectedServerId === server.id && connectionError && (
+                  <div className="ml-2 mt-1 px-2 py-1.5 text-xs text-red-400 bg-red-900/20 rounded">
+                    {connectionError}
+                  </div>
+                )}
 
                 {selectedServerId === server.id && rootEntries.length > 0 && (
                   <div className="ml-2 mt-0.5 max-h-80 overflow-y-auto scrollbar-thin">

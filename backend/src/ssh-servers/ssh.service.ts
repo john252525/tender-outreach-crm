@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Client } from 'ssh2';
 import { SshServer } from './entities/ssh-server.entity';
 import { CryptoUtil } from './utils/crypto.util';
@@ -11,8 +11,14 @@ export interface DirectoryEntry {
   modifiedAt: string;
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 @Injectable()
 export class SshService {
+  private readonly logger = new Logger(SshService.name);
   private createConnection(server: SshServer): Promise<Client> {
     return new Promise((resolve, reject) => {
       const conn = new Client();
@@ -84,12 +90,16 @@ export class SshService {
   async listDirectory(server: SshServer, path: string): Promise<DirectoryEntry[]> {
     this.validatePath(path);
 
+    this.logger.log(`Connecting to ${server.host}:${server.port} as ${server.username} (auth: ${server.authType})`);
+
     let conn: Client;
     try {
       conn = await this.createConnection(server);
     } catch (error) {
+      const msg = getErrorMessage(error);
+      this.logger.error(`SSH connection failed to ${server.host}: ${msg}`);
       throw new InternalServerErrorException(
-        `Не удалось подключиться к серверу: ${error.message}`,
+        `Не удалось подключиться к серверу: ${msg}`,
       );
     }
 
@@ -100,8 +110,10 @@ export class SshService {
       const output = await this.executeCommand(conn, command);
       return this.parseLsOutput(output, path);
     } catch (error) {
+      const msg = getErrorMessage(error);
+      this.logger.error(`Command failed on ${server.host}: ${msg}`);
       throw new InternalServerErrorException(
-        `Ошибка при чтении директории: ${error.message}`,
+        `Ошибка при чтении директории: ${msg}`,
       );
     }
   }
@@ -113,8 +125,10 @@ export class SshService {
     try {
       conn = await this.createConnection(server);
     } catch (error) {
+      const msg = getErrorMessage(error);
+      this.logger.error(`SSH connection failed to ${server.host}: ${msg}`);
       throw new InternalServerErrorException(
-        `Не удалось подключиться к серверу: ${error.message}`,
+        `Не удалось подключиться к серверу: ${msg}`,
       );
     }
 
@@ -128,8 +142,10 @@ export class SshService {
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
     } catch (error) {
+      const msg = getErrorMessage(error);
+      this.logger.error(`Recursive list failed on ${server.host}: ${msg}`);
       throw new InternalServerErrorException(
-        `Ошибка при рекурсивном чтении: ${error.message}`,
+        `Ошибка при рекурсивном чтении: ${msg}`,
       );
     }
   }
