@@ -35,6 +35,9 @@ export class User {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ type: 'jsonb', nullable: true, default: null })
+  settings: { theme?: 'classic' | 'modern'; colorMode?: 'light' | 'dark' } | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

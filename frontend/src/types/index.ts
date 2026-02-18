@@ -20,6 +20,14 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.PARTNER]: 'Партнёр',
 };
 
+export type ThemeVariant = 'classic' | 'modern';
+export type ColorMode = 'light' | 'dark';
+
+export interface UserSettings {
+  theme?: ThemeVariant;
+  colorMode?: ColorMode;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -30,12 +38,13 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt?: string;
+  settings?: UserSettings | null;
 }
 
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'role'>;
+  user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'role' | 'settings'>;
 }
 
 export interface PaginatedResponse<T> {

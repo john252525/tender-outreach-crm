@@ -1,6 +1,17 @@
-import { IsString, IsOptional, IsEnum, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsBoolean, IsIn, ValidateNested } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { Role } from '../../common/enums/role.enum';
+
+class UserSettingsDto {
+  @IsOptional()
+  @IsIn(['classic', 'modern'], { message: 'theme должен быть "classic" или "modern"' })
+  theme?: 'classic' | 'modern';
+
+  @IsOptional()
+  @IsIn(['light', 'dark'], { message: 'colorMode должен быть "light" или "dark"' })
+  colorMode?: 'light' | 'dark';
+}
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'Иван' })
@@ -27,4 +38,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ example: { theme: 'modern', colorMode: 'dark' } })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserSettingsDto)
+  settings?: UserSettingsDto;
 }

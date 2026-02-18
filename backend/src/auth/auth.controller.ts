@@ -48,6 +48,7 @@ export class AuthController {
       phone: user.phone,
       role: user.role,
       createdAt: user.createdAt,
+      settings: user.settings,
     };
   }
 }

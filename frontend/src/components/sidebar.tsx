@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
+import ThemeSwitcher from './theme-switcher';
+import type { UserSettings } from '@/types';
 
 interface NavItem {
   label: string;
@@ -58,6 +60,7 @@ interface SidebarProps {
     role: Role;
   };
   onLogout: () => void;
+  onSettingsChange?: (settings: UserSettings) => void;
 }
 
 function getRoleIcon(role: Role) {
@@ -74,7 +77,7 @@ function getRoleIcon(role: Role) {
   return map[role] || <UserCircle size={14} />;
 }
 
-export default function Sidebar({ user, onLogout }: SidebarProps) {
+export default function Sidebar({ user, onLogout, onSettingsChange }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -109,6 +112,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
         <SshSidebarSection />
       </nav>
+
+      <div className="border-t border-white/10">
+        <ThemeSwitcher onSettingsChange={onSettingsChange} />
+      </div>
 
       <div className="px-3 py-4 border-t border-white/10">
         <div className="px-3 py-2 mb-2">

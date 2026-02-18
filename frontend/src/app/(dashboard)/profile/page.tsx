@@ -6,6 +6,9 @@ import Header from '@/components/header';
 import { ROLE_LABELS } from '@/types';
 import { api } from '@/lib/api';
 import { Save } from 'lucide-react';
+import ThemedCard from '@/components/themed/card';
+import ThemedInput from '@/components/themed/input';
+import ThemedButton from '@/components/themed/button';
 
 export default function ProfilePage() {
   const { user, refetch } = useAuth();
@@ -52,17 +55,17 @@ export default function ProfilePage() {
     <>
       <Header title="Профиль" user={user} />
       <div className="p-6 max-w-2xl">
-        <div className="card">
-          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+        <ThemedCard>
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
             <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
               {user.firstName[0]}
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {user.firstName} {user.lastName}
               </h3>
-              <p className="text-sm text-gray-500">{user.email}</p>
-              <span className="inline-flex items-center px-2.5 py-0.5 mt-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+              <span className="inline-flex items-center px-2.5 py-0.5 mt-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
                 {ROLE_LABELS[user.role]}
               </span>
             </div>
@@ -70,75 +73,71 @@ export default function ProfilePage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {message && (
-              <div className="bg-green-50 text-green-600 text-sm px-4 py-3 rounded-lg border border-green-200">
+              <div className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
                 {message}
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Имя</label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Имя</label>
+                <ThemedInput
                   type="text"
                   value={form.firstName}
                   onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-                  className="input-field"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Фамилия</label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Фамилия</label>
+                <ThemedInput
                   type="text"
                   value={form.lastName}
                   onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-                  className="input-field"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-              <input
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Телефон</label>
+              <ThemedInput
                 type="tel"
                 value={form.phone}
                 onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                className="input-field"
                 placeholder="+7 999 123 45 67"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+              <ThemedInput
                 type="email"
                 value={user.email}
-                className="input-field bg-gray-50"
                 disabled
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Роль</label>
-              <input
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Роль</label>
+              <ThemedInput
                 type="text"
                 value={ROLE_LABELS[user.role]}
-                className="input-field bg-gray-50"
                 disabled
               />
             </div>
 
-            <button
+            <ThemedButton
               type="submit"
               disabled={saving}
-              className="btn-primary flex items-center gap-2"
+              variant="primary"
+              className="flex items-center gap-2"
             >
               <Save size={18} />
               {saving ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
+            </ThemedButton>
           </form>
-        </div>
+        </ThemedCard>
       </div>
     </>
   );

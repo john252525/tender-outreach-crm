@@ -66,10 +66,10 @@ export class UsersController {
       throw new ForbiddenException('Недостаточно прав для выполнения действия');
     }
 
-    // Non-admins can only update their own name and phone
+    // Non-admins can only update their own name, phone, and settings
     if (isSelf && !isAdmin) {
-      const { firstName, lastName, phone } = dto;
-      return this.usersService.update(id, { firstName, lastName, phone });
+      const { firstName, lastName, phone, settings } = dto;
+      return this.usersService.update(id, { firstName, lastName, phone, settings });
     }
 
     return this.usersService.update(id, dto);
