@@ -20,25 +20,47 @@ export class PurchasesService {
   ) {}
 
   async search(dto: SearchPurchasesDto, userId: string): Promise<Purchase[]> {
-    const limit = dto.limit ?? 10;
-    const skip = dto.skip ?? 0;
-    const stage = dto.stage ?? 1;
-    const region = dto.region ?? 52;
+    // Build params only with explicitly provided values
+    const params = new URLSearchParams();
 
-    const params = new URLSearchParams({
-      limit: String(limit),
-      skip: String(skip),
-      sort: 'updated_at_desc',
-      stage: String(stage),
-      region: String(region),
-      published_after: dto.publishedAfter || '',
-      published_before: dto.publishedBefore || '',
-      price_ge: dto.priceGe != null ? String(dto.priceGe) : '',
-      price_le: dto.priceLe != null ? String(dto.priceLe) : '',
-      object_info: dto.objectInfo || '',
-    });
+    // Always include limit and skip
+    params.set('limit', String(dto.limit ?? 10));
+    params.set('skip', String(dto.skip ?? 0));
+    params.set('sort', 'updated_at_desc');
+
+    // Only include stage if explicitly provided
+    if (dto.stage != null) {
+      params.set('stage', String(dto.stage));
+    }
+
+    // Only include region if explicitly provided
+    if (dto.region != null) {
+      params.set('region', String(dto.region));
+    }
+
+    // Only include optional string params if they have values
+    if (dto.publishedAfter) {
+      params.set('published_after', dto.publishedAfter);
+    }
+
+    if (dto.publishedBefore) {
+      params.set('published_before', dto.publishedBefore);
+    }
+
+    if (dto.priceGe != null) {
+      params.set('price_ge', String(dto.priceGe));
+    }
+
+    if (dto.priceLe != null) {
+      params.set('price_le', String(dto.priceLe));
+    }
+
+    if (dto.objectInfo) {
+      params.set('object_info', dto.objectInfo);
+    }
 
     const url = `https://v2.gosplan.info/fz44/purchases?${params.toString()}`;
+    this.logger.debug(`Search URL: ${url}`);
 
     let listData: any[];
     try {
