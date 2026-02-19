@@ -38,13 +38,13 @@ export class PurchaseFile {
   @Column({ type: 'text' })
   url: string;
 
-  @Column({ name: 'doc_kind_code', length: 20, nullable: true })
+  @Column({ name: 'doc_kind_code', type: 'varchar', length: 20, nullable: true })
   docKindCode: string | null;
 
   @Column({ name: 'doc_kind_name', type: 'varchar', nullable: true })
   docKindName: string | null;
 
-  @Column({ name: 'doc_type', length: 100, nullable: true })
+  @Column({ name: 'doc_type', type: 'varchar', length: 100, nullable: true })
   docType: string | null;
 
   @Column({ name: 'is_downloaded', type: 'boolean', default: false })

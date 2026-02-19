@@ -23,10 +23,10 @@ export class Purchase {
   @Column({ name: 'max_price', type: 'decimal', precision: 15, scale: 2, nullable: true })
   maxPrice: number | null;
 
-  @Column({ name: 'currency_code', length: 10, nullable: true })
+  @Column({ name: 'currency_code', type: 'varchar', length: 10, nullable: true })
   currencyCode: string | null;
 
-  @Column({ name: 'purchase_type', length: 100, nullable: true })
+  @Column({ name: 'purchase_type', type: 'varchar', length: 100, nullable: true })
   purchaseType: string | null;
 
   @Column({ type: 'int', nullable: true })
