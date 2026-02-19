@@ -69,3 +69,43 @@ export interface DirectoryEntry {
   size: number;
   modifiedAt: string;
 }
+
+export interface Purchase {
+  id: string;
+  purchaseNumber: string;
+  objectInfo: string | null;
+  maxPrice: number | null;
+  currencyCode: string | null;
+  purchaseType: string | null;
+  stage: number | null;
+  region: number | null;
+  publishedAt: string | null;
+  updatedAtExternal: string | null;
+  customers: string[] | null;
+  rawListData: Record<string, unknown> | null;
+  rawDetailData: Record<string, unknown> | null;
+  detailFetchedAt: string | null;
+  createdAt: string;
+  files?: PurchaseFile[];
+}
+
+export interface PurchaseFile {
+  id: string;
+  publishedContentId: string;
+  fileName: string | null;
+  fileSize: number | null;
+  docDescription: string | null;
+  docDate: string | null;
+  url: string;
+  docKindCode: string | null;
+  docKindName: string | null;
+  docType: string | null;
+  isDownloaded: boolean;
+}
+
+export interface UserPurchaseHistory {
+  id: string;
+  searchQuery: string | null;
+  foundAt: string;
+  purchase: Purchase;
+}

@@ -15,6 +15,7 @@ import {
   Megaphone,
   HeadphonesIcon,
   HeartHandshake,
+  ShoppingCart,
   LogOut,
   Menu,
   X,
@@ -36,6 +37,12 @@ const navItems: NavItem[] = [
     label: 'Дашборд',
     href: '/dashboard',
     icon: <LayoutDashboard size={20} />,
+    roles: [Role.ADMIN, Role.DIRECTOR, Role.MANAGER, Role.SUPPORT, Role.SELLER, Role.MARKETER, Role.CLIENT, Role.PARTNER],
+  },
+  {
+    label: 'Закупки',
+    href: '/purchases',
+    icon: <ShoppingCart size={20} />,
     roles: [Role.ADMIN, Role.DIRECTOR, Role.MANAGER, Role.SUPPORT, Role.SELLER, Role.MARKETER, Role.CLIENT, Role.PARTNER],
   },
   {
