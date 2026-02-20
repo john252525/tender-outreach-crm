@@ -75,6 +75,19 @@ export class PurchasesController {
     return this.purchasesService.getHistory(user.id, page, limit);
   }
 
+  @Post('files/:fileId/parse')
+  parseFile(
+    @Param('fileId') fileId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.parseAndSaveFileText(fileId, user);
+  }
+
+  @Get('files/:fileId/text')
+  getFileText(@Param('fileId') fileId: string) {
+    return this.purchasesService.getFileText(fileId);
+  }
+
   @Get(':purchaseNumber')
   async getById(@Param('purchaseNumber') purchaseNumber: string) {
     const purchase = await this.purchasesService.getById(purchaseNumber);

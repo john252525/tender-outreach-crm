@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Purchase } from './entities/purchase.entity';
@@ -401,5 +401,61 @@ export class PurchasesService {
         );
       }
     }
+  }
+
+  async parseAndSaveFileText(
+    fileId: string,
+    user: { settings?: { parserDocsUrl?: string; proxyUrl?: string } | null },
+  ): Promise<PurchaseFile> {
+    const file = await this.purchaseFileRepository.findOne({
+      where: { id: fileId },
+    });
+
+    if (!file) {
+      throw new NotFoundException('Файл не найден');
+    }
+
+    const parserDocsUrl = user.settings?.parserDocsUrl;
+    const proxyUrl = user.settings?.proxyUrl;
+
+    if (!parserDocsUrl || !proxyUrl) {
+      throw new BadRequestException('Настройте Parser Docs URL и Proxy URL в профиле');
+    }
+
+    const encodedFileUrl = encodeURIComponent(file.url);
+    const proxiedUrl = proxyUrl + encodedFileUrl;
+    const encodedProxiedUrl = encodeURIComponent(proxiedUrl);
+    const finalUrl = parserDocsUrl + encodedProxiedUrl;
+
+    try {
+      const response = await fetch(finalUrl, {
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Parser API returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      file.parsedText = data.text || null;
+      await this.purchaseFileRepository.save(file);
+
+      return file;
+    } catch (error) {
+      this.logger.error(`Failed to parse file ${fileId}: ${error.message}`);
+      throw new BadRequestException(`Ошибка парсинга документа: ${error.message}`);
+    }
+  }
+
+  async getFileText(fileId: string): Promise<{ text: string | null }> {
+    const file = await this.purchaseFileRepository.findOne({
+      where: { id: fileId },
+    });
+
+    if (!file) {
+      throw new NotFoundException('Файл не найден');
+    }
+
+    return { text: file.parsedText };
   }
 }

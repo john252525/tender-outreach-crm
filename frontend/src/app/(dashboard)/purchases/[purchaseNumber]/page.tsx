@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
-import { Purchase } from '@/types';
+import { Purchase, PurchaseFile } from '@/types';
 import {
   ArrowLeft,
   FileDown,
@@ -15,6 +15,10 @@ import {
   MapPin,
   FileText,
   Eye,
+  Save,
+  BookOpen,
+  Loader2,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -70,8 +74,10 @@ export default function PurchaseDetailPage() {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [savingFileId, setSavingFileId] = useState<string | null>(null);
+  const [viewingFile, setViewingFile] = useState<PurchaseFile | null>(null);
 
-  const handlePreview = (file: any) => {
+  const handlePreview = (file: PurchaseFile) => {
     const parserDocsUrl = user?.settings?.parserDocsUrl;
     const proxyUrl = user?.settings?.proxyUrl;
 
@@ -89,6 +95,26 @@ export default function PurchaseDetailPage() {
       window.open(finalUrl, '_blank');
     } catch (err) {
       alert('Ошибка открытия документа');
+    }
+  };
+
+  const handleSave = async (file: PurchaseFile) => {
+    if (savingFileId) return;
+    setSavingFileId(file.id);
+
+    try {
+      const updated = await api.post<PurchaseFile>(`/purchases/files/${file.id}/parse`, {});
+      setPurchase((prev) => {
+        if (!prev || !prev.files) return prev;
+        return {
+          ...prev,
+          files: prev.files.map((f) => (f.id === updated.id ? { ...f, parsedText: updated.parsedText } : f)),
+        };
+      });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Ошибка сохранения документа');
+    } finally {
+      setSavingFileId(null);
     }
   };
 
@@ -251,6 +277,30 @@ export default function PurchaseDetailPage() {
                         <Eye size={14} />
                         Предпросмотр
                       </button>
+                      {file.parsedText ? (
+                        <button
+                          onClick={() => setViewingFile(file)}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 rounded-md hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors shrink-0"
+                          title="Просмотр сохранённого текста"
+                        >
+                          <BookOpen size={14} />
+                          Просмотр
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSave(file)}
+                          disabled={savingFileId === file.id}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors shrink-0 disabled:opacity-50"
+                          title="Сохранить текст документа"
+                        >
+                          {savingFileId === file.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Save size={14} />
+                          )}
+                          {savingFileId === file.id ? 'Сохранение...' : 'Сохранить'}
+                        </button>
+                      )}
                       <a
                         href={file.url}
                         target="_blank"
@@ -262,6 +312,32 @@ export default function PurchaseDetailPage() {
                       </a>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            {/* Saved text modal */}
+            {viewingFile && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setViewingFile(null)}>
+                <div
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[85vh] flex flex-col"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate pr-4">
+                      {viewingFile.fileName || viewingFile.docDescription || 'Документ'}
+                    </h3>
+                    <button
+                      onClick={() => setViewingFile(null)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-auto p-6">
+                    <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words font-sans leading-relaxed">
+                      {viewingFile.parsedText}
+                    </pre>
+                  </div>
                 </div>
               </div>
             )}

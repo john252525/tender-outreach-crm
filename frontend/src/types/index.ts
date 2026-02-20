@@ -103,6 +103,7 @@ export interface PurchaseFile {
   docKindName: string | null;
   docType: string | null;
   isDownloaded: boolean;
+  parsedText: string | null;
 }
 
 export interface UserPurchaseHistory {

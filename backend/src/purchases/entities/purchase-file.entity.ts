@@ -53,6 +53,9 @@ export class PurchaseFile {
   @Column({ name: 'local_path', type: 'varchar', nullable: true })
   localPath: string | null;
 
+  @Column({ name: 'parsed_text', type: 'text', nullable: true })
+  parsedText: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }
