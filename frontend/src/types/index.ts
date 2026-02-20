@@ -26,6 +26,8 @@ export type ColorMode = 'light' | 'dark';
 export interface UserSettings {
   theme?: ThemeVariant;
   colorMode?: ColorMode;
+  parserDocsUrl?: string;
+  proxyUrl?: string;
 }
 
 export interface User {

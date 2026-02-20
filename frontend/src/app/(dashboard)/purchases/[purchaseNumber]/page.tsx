@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
-import { Purchase } from '@/types';
+import { Purchase, PurchaseFile } from '@/types';
 import {
   ArrowLeft,
   FileDown,
@@ -14,6 +14,9 @@ import {
   Tag,
   MapPin,
   FileText,
+  Eye,
+  X,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -62,6 +65,58 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
+function DocumentPreviewModal({
+  file,
+  content,
+  loading,
+  error,
+  onClose,
+}: {
+  file: PurchaseFile;
+  content: string;
+  loading: boolean;
+  error: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate pr-4">
+            {file.fileName || file.docDescription || 'Документ'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 size={32} className="animate-spin text-primary-600" />
+              <span className="ml-3 text-sm text-gray-500">Загрузка документа...</span>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-lg border border-red-200 dark:border-red-800">
+              {error}
+            </div>
+          ) : (
+            <div
+              className="prose dark:prose-invert max-w-none text-sm whitespace-pre-wrap break-words"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PurchaseDetailPage() {
   const { user } = useAuth();
   const params = useParams();
@@ -69,6 +124,48 @@ export default function PurchaseDetailPage() {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [previewFile, setPreviewFile] = useState<PurchaseFile | null>(null);
+  const [previewContent, setPreviewContent] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+
+  const handlePreview = async (file: PurchaseFile) => {
+    const parserDocsUrl = user?.settings?.parserDocsUrl;
+    const proxyUrl = user?.settings?.proxyUrl;
+
+    if (!parserDocsUrl || !proxyUrl) {
+      alert('Настройте Parser Docs URL и Proxy URL в профиле');
+      return;
+    }
+
+    setPreviewFile(file);
+    setPreviewContent('');
+    setPreviewError('');
+    setPreviewLoading(true);
+
+    try {
+      // 1. Encode the direct file URL
+      const encodedFileUrl = encodeURIComponent(file.url);
+      // 2. Append to proxy URL
+      const proxiedUrl = proxyUrl + encodedFileUrl;
+      // 3. Encode the proxied URL
+      const encodedProxiedUrl = encodeURIComponent(proxiedUrl);
+      // 4. Append to parser docs URL
+      const finalUrl = parserDocsUrl + encodedProxiedUrl;
+
+      const response = await fetch(finalUrl);
+      if (!response.ok) {
+        throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+      }
+
+      const text = await response.text();
+      setPreviewContent(text);
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : 'Ошибка загрузки документа');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!purchaseNumber) return;
@@ -206,11 +303,8 @@ export default function PurchaseDetailPage() {
                 </h4>
                 <div className="space-y-2">
                   {purchase.files.map((file) => (
-                    <a
+                    <div
                       key={file.id}
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
                     >
                       <FileText size={20} className="text-gray-400 group-hover:text-primary-600 shrink-0" />
@@ -224,11 +318,38 @@ export default function PurchaseDetailPage() {
                           {file.docDate && <span>{formatDate(file.docDate)}</span>}
                         </div>
                       </div>
-                      <FileDown size={16} className="text-gray-400 group-hover:text-primary-600 shrink-0" />
-                    </a>
+                      <button
+                        onClick={() => handlePreview(file)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors shrink-0"
+                        title="Предпросмотр документа"
+                      >
+                        <Eye size={14} />
+                        Предпросмотр
+                      </button>
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0"
+                        title="Скачать"
+                      >
+                        <FileDown size={16} className="text-gray-400 hover:text-primary-600 transition-colors" />
+                      </a>
+                    </div>
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Document Preview Modal */}
+            {previewFile && (
+              <DocumentPreviewModal
+                file={previewFile}
+                content={previewContent}
+                loading={previewLoading}
+                error={previewError}
+                onClose={() => setPreviewFile(null)}
+              />
             )}
           </div>
         ) : null}

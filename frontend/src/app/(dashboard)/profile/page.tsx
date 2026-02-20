@@ -17,8 +17,14 @@ export default function ProfilePage() {
     lastName: '',
     phone: '',
   });
+  const [urlForm, setUrlForm] = useState({
+    parserDocsUrl: '',
+    proxyUrl: '',
+  });
   const [saving, setSaving] = useState(false);
+  const [savingUrls, setSavingUrls] = useState(false);
   const [message, setMessage] = useState('');
+  const [urlMessage, setUrlMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -26,6 +32,10 @@ export default function ProfilePage() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         phone: user.phone || '',
+      });
+      setUrlForm({
+        parserDocsUrl: user.settings?.parserDocsUrl || '',
+        proxyUrl: user.settings?.proxyUrl || '',
       });
     }
   }, [user]);
@@ -54,7 +64,7 @@ export default function ProfilePage() {
   return (
     <>
       <Header title="Профиль" user={user} />
-      <div className="p-6 max-w-2xl">
+      <div className="p-6 max-w-2xl space-y-6">
         <ThemedCard>
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
             <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
@@ -135,6 +145,81 @@ export default function ProfilePage() {
             >
               <Save size={18} />
               {saving ? 'Сохранение...' : 'Сохранить изменения'}
+            </ThemedButton>
+          </form>
+        </ThemedCard>
+
+        <ThemedCard>
+          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Настройки парсинга документов
+          </h4>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setSavingUrls(true);
+              setUrlMessage('');
+              try {
+                await api.patch(`/users/${user.id}`, {
+                  settings: {
+                    ...user.settings,
+                    parserDocsUrl: urlForm.parserDocsUrl || undefined,
+                    proxyUrl: urlForm.proxyUrl || undefined,
+                  },
+                });
+                await refetch();
+                setUrlMessage('Настройки сохранены');
+              } catch (err) {
+                setUrlMessage(err instanceof Error ? err.message : 'Ошибка сохранения');
+              } finally {
+                setSavingUrls(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            {urlMessage && (
+              <div className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
+                {urlMessage}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Parser Docs URL
+              </label>
+              <ThemedInput
+                type="url"
+                value={urlForm.parserDocsUrl}
+                onChange={(e) => setUrlForm((p) => ({ ...p, parserDocsUrl: e.target.value }))}
+                placeholder="https://parser.example.com/parse?url="
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                URL сервиса парсинга документов. Закодированная ссылка будет добавлена в конец.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Proxy URL
+              </label>
+              <ThemedInput
+                type="url"
+                value={urlForm.proxyUrl}
+                onChange={(e) => setUrlForm((p) => ({ ...p, proxyUrl: e.target.value }))}
+                placeholder="https://proxy.example.com/fetch?url="
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                URL прокси-сервера. Прямая ссылка на документ будет закодирована и добавлена в конец.
+              </p>
+            </div>
+
+            <ThemedButton
+              type="submit"
+              disabled={savingUrls}
+              variant="primary"
+              className="flex items-center gap-2"
+            >
+              <Save size={18} />
+              {savingUrls ? 'Сохранение...' : 'Сохранить настройки'}
             </ThemedButton>
           </form>
         </ThemedCard>

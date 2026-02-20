@@ -36,7 +36,12 @@ export class User {
   isActive: boolean;
 
   @Column({ type: 'jsonb', nullable: true, default: null })
-  settings: { theme?: 'classic' | 'modern'; colorMode?: 'light' | 'dark' } | null;
+  settings: {
+    theme?: 'classic' | 'modern';
+    colorMode?: 'light' | 'dark';
+    parserDocsUrl?: string;
+    proxyUrl?: string;
+  } | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

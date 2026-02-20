@@ -11,6 +11,14 @@ class UserSettingsDto {
   @IsOptional()
   @IsIn(['light', 'dark'], { message: 'colorMode должен быть "light" или "dark"' })
   colorMode?: 'light' | 'dark';
+
+  @IsOptional()
+  @IsString()
+  parserDocsUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  proxyUrl?: string;
 }
 
 export class UpdateUserDto {
