@@ -71,6 +71,27 @@ export default function PurchaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const handlePreview = (file: any) => {
+    const parserDocsUrl = user?.settings?.parserDocsUrl;
+    const proxyUrl = user?.settings?.proxyUrl;
+
+    if (!parserDocsUrl || !proxyUrl) {
+      alert('Настройте Parser Docs URL и Proxy URL в профиле');
+      return;
+    }
+
+    try {
+      const encodedFileUrl = encodeURIComponent(file.url);
+      const proxiedUrl = proxyUrl + encodedFileUrl;
+      const encodedProxiedUrl = encodeURIComponent(proxiedUrl);
+      const finalUrl = parserDocsUrl + encodedProxiedUrl;
+
+      window.open(finalUrl, '_blank');
+    } catch (err) {
+      alert('Ошибка открытия документа');
+    }
+  };
+
   useEffect(() => {
     if (!purchaseNumber) return;
 
@@ -222,16 +243,14 @@ export default function PurchaseDetailPage() {
                           {file.docDate && <span>{formatDate(file.docDate)}</span>}
                         </div>
                       </div>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handlePreview(file)}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors shrink-0"
-                        title="Открыть документ"
+                        title="Предпросмотр документа"
                       >
                         <Eye size={14} />
-                        Открыть
-                      </a>
+                        Предпросмотр
+                      </button>
                       <a
                         href={file.url}
                         target="_blank"
