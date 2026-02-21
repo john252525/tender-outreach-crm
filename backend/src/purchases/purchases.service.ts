@@ -600,10 +600,12 @@ export class PurchasesService {
     aiResult = await this.aiResultRepository.save(aiResult);
 
     // Reload with relation
-    return this.aiResultRepository.findOne({
+    const reloaded = await this.aiResultRepository.findOne({
       where: { id: aiResult.id },
       relations: ['searchTerm'],
     });
+
+    return reloaded!;
   }
 
   async getAiResult(
