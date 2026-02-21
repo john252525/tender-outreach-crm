@@ -13,6 +13,7 @@ import {
   Loader2,
   ExternalLink,
   Globe,
+  ShoppingCart,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -131,6 +132,22 @@ export default function SearchTermsPage() {
                       {searchingId === term.id ? 'Поиск...' : 'Искать'}
                     </button>
                   </div>
+
+                  {/* Linked purchases */}
+                  {term.purchases && term.purchases.length > 0 && (
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      <ShoppingCart size={14} className="text-gray-400 shrink-0" />
+                      {term.purchases.map((p) => (
+                        <Link
+                          key={p.id}
+                          href={`/purchases/${p.purchaseNumber}`}
+                          className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+                        >
+                          {p.purchaseNumber}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Search results */}
                   {expandedId === term.id && searchResults[term.id] && (

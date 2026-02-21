@@ -132,11 +132,15 @@ export interface FoundPurchase {
   isFavorite: boolean;
   createdAt: string;
   purchase: Purchase;
+  aiResult?: { id: string; subject: string | null; searchTerm: AiSearchTerm | null } | null;
+  savedDocsCount?: number;
+  totalDocsCount?: number;
 }
 
 export interface AiSearchTerm {
   id: string;
   term: string;
+  purchases?: Purchase[];
 }
 
 export interface PurchaseAiResult {

@@ -13,6 +13,8 @@ import {
   ExternalLink,
   Sparkles,
   Loader2,
+  FileText,
+  Mail,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -76,12 +78,13 @@ export default function FavoritesPage() {
     try {
       await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
       alert('AI-анализ завершён');
+      fetchData();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Ошибка AI-анализа');
     } finally {
       setPreparingId(null);
     }
-  }, [preparingId]);
+  }, [preparingId, fetchData]);
 
   const removeFavorite = useCallback(async (purchaseId: string) => {
     try {
@@ -161,6 +164,24 @@ export default function FavoritesPage() {
                           <span>Опубликовано: {formatDate(item.purchase.publishedAt)}</span>
                         )}
                         {item.purchase.purchaseType && <span>{item.purchase.purchaseType}</span>}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {item.totalDocsCount !== undefined && item.totalDocsCount > 0 && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            item.savedDocsCount && item.savedDocsCount > 0
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                          }`}>
+                            <FileText size={12} />
+                            {item.savedDocsCount || 0}/{item.totalDocsCount} сохр.
+                          </span>
+                        )}
+                        {item.aiResult && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                            <Mail size={12} />
+                            {item.aiResult.subject || 'Письмо готово'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">

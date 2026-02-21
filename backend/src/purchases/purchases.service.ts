@@ -225,7 +225,7 @@ export class PurchasesService {
     userId: string,
     page: number = 1,
     limit: number = 20,
-  ): Promise<{ data: FoundPurchase[]; total: number }> {
+  ): Promise<{ data: any[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const [data, total] = await this.foundPurchaseRepository.findAndCount({
@@ -236,7 +236,7 @@ export class PurchasesService {
       take: limit,
     });
 
-    return { data, total };
+    return { data: await this.enrichWithAiStatus(data, userId), total };
   }
 
   // --- Favorites ---
@@ -245,7 +245,7 @@ export class PurchasesService {
     userId: string,
     page: number = 1,
     limit: number = 20,
-  ): Promise<{ data: FoundPurchase[]; total: number }> {
+  ): Promise<{ data: any[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const [data, total] = await this.foundPurchaseRepository.findAndCount({
@@ -256,7 +256,35 @@ export class PurchasesService {
       take: limit,
     });
 
-    return { data, total };
+    return { data: await this.enrichWithAiStatus(data, userId), total };
+  }
+
+  private async enrichWithAiStatus(
+    items: FoundPurchase[],
+    userId: string,
+  ): Promise<any[]> {
+    if (items.length === 0) return items;
+
+    const purchaseIds = items.map((i) => i.purchaseId);
+    const aiResults = await this.aiResultRepository.find({
+      where: purchaseIds.map((pid) => ({ userId, purchaseId: pid })),
+      relations: ['searchTerm'],
+      select: ['id', 'purchaseId', 'subject', 'searchTermId'],
+    });
+
+    const aiMap = new Map(aiResults.map((r) => [r.purchaseId, r]));
+
+    return items.map((item) => {
+      const ai = aiMap.get(item.purchaseId);
+      const savedDocsCount = item.purchase?.files?.filter((f) => f.parsedText)?.length || 0;
+      const totalDocsCount = item.purchase?.files?.length || 0;
+      return {
+        ...item,
+        aiResult: ai ? { id: ai.id, subject: ai.subject, searchTerm: ai.searchTerm } : null,
+        savedDocsCount,
+        totalDocsCount,
+      };
+    });
   }
 
   async toggleFavorite(
@@ -648,27 +676,37 @@ export class PurchasesService {
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: any[]; total: number }> {
-    const skip = (page - 1) * limit;
-
-    const [junctions, total] = await this.aiSearchTermPurchaseRepository.findAndCount({
+    // Get unique search terms for this user
+    const allJunctions = await this.aiSearchTermPurchaseRepository.find({
       where: { userId },
-      relations: ['searchTerm'],
+      relations: ['searchTerm', 'purchase'],
       order: { createdAt: 'DESC' },
-      skip,
-      take: limit,
     });
 
-    // Group by search term, deduplicate
-    const seen = new Set<string>();
-    const terms: AiSearchTerm[] = [];
-    for (const j of junctions) {
-      if (j.searchTerm && !seen.has(j.searchTerm.id)) {
-        seen.add(j.searchTerm.id);
-        terms.push(j.searchTerm);
+    // Group purchases by search term
+    const termMap = new Map<string, { term: AiSearchTerm; purchases: Purchase[] }>();
+    for (const j of allJunctions) {
+      if (!j.searchTerm) continue;
+      if (!termMap.has(j.searchTerm.id)) {
+        termMap.set(j.searchTerm.id, { term: j.searchTerm, purchases: [] });
+      }
+      if (j.purchase) {
+        termMap.get(j.searchTerm.id)!.purchases.push(j.purchase);
       }
     }
 
-    return { data: terms, total };
+    const allTerms = Array.from(termMap.values());
+    const total = allTerms.length;
+    const skip = (page - 1) * limit;
+    const paged = allTerms.slice(skip, skip + limit);
+
+    return {
+      data: paged.map((t) => ({
+        ...t.term,
+        purchases: t.purchases,
+      })),
+      total,
+    };
   }
 
   // --- Execute web search ---
