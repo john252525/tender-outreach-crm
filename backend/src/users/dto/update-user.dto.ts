@@ -19,6 +19,14 @@ class UserSettingsDto {
   @IsOptional()
   @IsString()
   proxyUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  aiUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  aiPrompt?: string;
 }
 
 export class UpdateUserDto {
