@@ -41,6 +41,8 @@ export class User {
     colorMode?: 'light' | 'dark';
     parserDocsUrl?: string;
     proxyUrl?: string;
+    aiUrl?: string;
+    aiPrompt?: string;
   } | null;
 
   @CreateDateColumn({ name: 'created_at' })

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
-import { Purchase, PurchaseFile } from '@/types';
+import { Purchase, PurchaseFile, PurchaseAiResult } from '@/types';
 import {
   ArrowLeft,
   FileDown,
@@ -19,6 +19,10 @@ import {
   BookOpen,
   Loader2,
   X,
+  Sparkles,
+  Search,
+  Mail,
+  MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -76,6 +80,8 @@ export default function PurchaseDetailPage() {
   const [error, setError] = useState('');
   const [savingFileId, setSavingFileId] = useState<string | null>(null);
   const [viewingFile, setViewingFile] = useState<PurchaseFile | null>(null);
+  const [aiResult, setAiResult] = useState<PurchaseAiResult | null>(null);
+  const [preparing, setPreparing] = useState(false);
 
   const handlePreview = (file: PurchaseFile) => {
     const parserDocsUrl = user?.settings?.parserDocsUrl;
@@ -118,6 +124,19 @@ export default function PurchaseDetailPage() {
     }
   };
 
+  const handlePrepare = async () => {
+    if (!purchase || preparing) return;
+    setPreparing(true);
+    try {
+      const result = await api.post<PurchaseAiResult>(`/purchases/${purchase.id}/prepare`, {});
+      setAiResult(result);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Ошибка AI-анализа');
+    } finally {
+      setPreparing(false);
+    }
+  };
+
   useEffect(() => {
     if (!purchaseNumber) return;
 
@@ -125,6 +144,13 @@ export default function PurchaseDetailPage() {
       try {
         const data = await api.get<Purchase>(`/purchases/${purchaseNumber}`);
         setPurchase(data);
+        // Fetch AI result if exists
+        try {
+          const result = await api.get<PurchaseAiResult | null>(`/purchases/${data.id}/ai-result`);
+          if (result) setAiResult(result);
+        } catch {
+          // no AI result yet
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки');
       } finally {
@@ -315,6 +341,68 @@ export default function PurchaseDetailPage() {
                 </div>
               </div>
             )}
+            {/* AI Result */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <Sparkles size={16} className="text-violet-500" />
+                  AI-анализ
+                </h4>
+                <button
+                  onClick={handlePrepare}
+                  disabled={preparing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-md hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
+                >
+                  {preparing ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={14} />
+                  )}
+                  {preparing ? 'Анализ...' : aiResult ? 'Повторить' : 'Prepare'}
+                </button>
+              </div>
+
+              {aiResult ? (
+                <div className="space-y-4">
+                  {aiResult.searchTerm && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
+                      <Search size={16} className="text-violet-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-1">Поисковый запрос</p>
+                        <p className="text-sm text-gray-900 dark:text-gray-100">{aiResult.searchTerm.term}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {aiResult.subject && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                      <Mail size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Тема</p>
+                        <p className="text-sm text-gray-900 dark:text-gray-100">{aiResult.subject}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {aiResult.body && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+                      <MessageSquare size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Содержание</p>
+                        <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-sans leading-relaxed">
+                          {aiResult.body}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  Нажмите &quot;Prepare&quot; для запуска AI-анализа. Убедитесь, что документы сохранены и настроены AI URL и промпт.
+                </p>
+              )}
+            </div>
+
             {/* Saved text modal */}
             {viewingFile && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setViewingFile(null)}>

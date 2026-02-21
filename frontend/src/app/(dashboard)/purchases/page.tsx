@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
-import { Purchase, SearchResponse } from '@/types';
+import { Purchase, SearchResponse, PurchaseAiResult } from '@/types';
 import {
   Search,
   ChevronDown,
@@ -15,6 +15,8 @@ import {
   Star,
   History,
   FolderSearch,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -97,6 +99,21 @@ export default function PurchasesPage() {
     },
     [form],
   );
+
+  const [preparingId, setPreparingId] = useState<string | null>(null);
+
+  const handlePrepare = useCallback(async (purchaseId: string) => {
+    if (preparingId) return;
+    setPreparingId(purchaseId);
+    try {
+      await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
+      alert('AI-анализ завершён');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Ошибка AI-анализа');
+    } finally {
+      setPreparingId(null);
+    }
+  }, [preparingId]);
 
   const toggleFavorite = useCallback(async (purchaseId: string) => {
     try {
@@ -377,6 +394,19 @@ export default function PurchasesPage() {
                       {formatPrice(purchase.maxPrice, purchase.currencyCode)}
                     </p>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handlePrepare(purchase.id)}
+                        disabled={preparingId === purchase.id}
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-md hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
+                        title="AI-анализ"
+                      >
+                        {preparingId === purchase.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                        Prepare
+                      </button>
                       <button
                         onClick={() => toggleFavorite(purchase.id)}
                         className={`p-1.5 rounded-lg transition-colors ${

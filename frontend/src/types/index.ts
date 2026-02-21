@@ -28,6 +28,8 @@ export interface UserSettings {
   colorMode?: ColorMode;
   parserDocsUrl?: string;
   proxyUrl?: string;
+  aiUrl?: string;
+  aiPrompt?: string;
 }
 
 export interface User {
@@ -129,6 +131,21 @@ export interface FoundPurchase {
   isFavorite: boolean;
   createdAt: string;
   purchase: Purchase;
+}
+
+export interface AiSearchTerm {
+  id: string;
+  term: string;
+}
+
+export interface PurchaseAiResult {
+  id: string;
+  userId: string;
+  purchaseId: string;
+  subject: string | null;
+  body: string | null;
+  searchTerm: AiSearchTerm | null;
+  createdAt: string;
 }
 
 export interface SearchResponse {

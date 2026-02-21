@@ -6,6 +6,9 @@ import { PurchaseFile } from './entities/purchase-file.entity';
 import { UserPurchaseHistory } from './entities/user-purchase-history.entity';
 import { SearchQuery } from './entities/search-query.entity';
 import { FoundPurchase } from './entities/found-purchase.entity';
+import { PurchaseAiResult } from './entities/purchase-ai-result.entity';
+import { AiSearchTerm } from './entities/ai-search-term.entity';
+import { AiSearchTermPurchase } from './entities/ai-search-term-purchase.entity';
 import { SearchPurchasesDto } from './dto/search-purchases.dto';
 
 @Injectable()
@@ -23,6 +26,12 @@ export class PurchasesService {
     private readonly searchQueryRepository: Repository<SearchQuery>,
     @InjectRepository(FoundPurchase)
     private readonly foundPurchaseRepository: Repository<FoundPurchase>,
+    @InjectRepository(PurchaseAiResult)
+    private readonly aiResultRepository: Repository<PurchaseAiResult>,
+    @InjectRepository(AiSearchTerm)
+    private readonly aiSearchTermRepository: Repository<AiSearchTerm>,
+    @InjectRepository(AiSearchTermPurchase)
+    private readonly aiSearchTermPurchaseRepository: Repository<AiSearchTermPurchase>,
   ) {}
 
   async search(
@@ -457,5 +466,153 @@ export class PurchasesService {
     }
 
     return { text: file.parsedText };
+  }
+
+  async preparePurchase(
+    purchaseId: string,
+    user: {
+      id: string;
+      settings?: {
+        aiUrl?: string;
+        aiPrompt?: string;
+      } | null;
+    },
+  ): Promise<PurchaseAiResult> {
+    const aiUrl = user.settings?.aiUrl;
+    const aiPrompt = user.settings?.aiPrompt;
+
+    if (!aiUrl) {
+      throw new BadRequestException('Настройте AI URL в профиле');
+    }
+    if (!aiPrompt) {
+      throw new BadRequestException('Настройте AI промпт в профиле');
+    }
+
+    const purchase = await this.purchaseRepository.findOne({
+      where: { id: purchaseId },
+      relations: ['files'],
+    });
+
+    if (!purchase) {
+      throw new NotFoundException('Закупка не найдена');
+    }
+
+    // Build %DATA%: prompt + purchase title + all saved document texts
+    const savedFiles = (purchase.files || []).filter((f) => f.parsedText);
+    const docTexts = savedFiles
+      .map((f, i) => `--- Документ ${i + 1}: ${f.fileName || f.docDescription || 'Без названия'} ---\n${f.parsedText}`)
+      .join('\n\n');
+
+    const data = [
+      aiPrompt,
+      `\nНазвание закупки: ${purchase.objectInfo || purchase.purchaseNumber}`,
+      docTexts ? `\n${docTexts}` : '',
+    ].join('\n');
+
+    // POST to AI URL
+    let aiResponse: any;
+    try {
+      const response = await fetch(aiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: data }),
+        signal: AbortSignal.timeout(120000),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI API returned status ${response.status}`);
+      }
+
+      aiResponse = await response.json();
+    } catch (error) {
+      this.logger.error(`Failed to call AI API: ${error.message}`);
+      throw new BadRequestException(`Ошибка AI API: ${error.message}`);
+    }
+
+    // Parse answer - may be raw JSON or wrapped in markdown ```json ... ```
+    let parsed: { search?: string; subject?: string; body?: string };
+    try {
+      let answerStr = aiResponse.answer || '';
+      // Strip markdown code block wrapping
+      const jsonMatch = answerStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        answerStr = jsonMatch[1].trim();
+      }
+      parsed = JSON.parse(answerStr);
+    } catch {
+      this.logger.error(`Failed to parse AI answer: ${aiResponse.answer}`);
+      throw new BadRequestException('AI вернул невалидный JSON');
+    }
+
+    const searchText = (parsed.search || '').trim();
+    const subject = (parsed.subject || '').trim() || null;
+    const body = (parsed.body || '').trim() || null;
+
+    // Upsert ai_search_term
+    let searchTerm: AiSearchTerm | null = null;
+    if (searchText) {
+      searchTerm = await this.aiSearchTermRepository.findOne({
+        where: { term: searchText },
+      });
+      if (!searchTerm) {
+        searchTerm = this.aiSearchTermRepository.create({ term: searchText });
+        searchTerm = await this.aiSearchTermRepository.save(searchTerm);
+      }
+
+      // Upsert junction
+      const existingJunction = await this.aiSearchTermPurchaseRepository.findOne({
+        where: {
+          searchTermId: searchTerm.id,
+          purchaseId: purchase.id,
+          userId: user.id,
+        },
+      });
+      if (!existingJunction) {
+        const junction = this.aiSearchTermPurchaseRepository.create({
+          searchTermId: searchTerm.id,
+          purchaseId: purchase.id,
+          userId: user.id,
+        });
+        await this.aiSearchTermPurchaseRepository.save(junction);
+      }
+    }
+
+    // Upsert purchase_ai_result
+    let aiResult = await this.aiResultRepository.findOne({
+      where: { userId: user.id, purchaseId: purchase.id },
+      relations: ['searchTerm'],
+    });
+
+    if (aiResult) {
+      aiResult.subject = subject;
+      aiResult.body = body;
+      aiResult.searchTermId = searchTerm?.id || null;
+    } else {
+      aiResult = this.aiResultRepository.create({
+        userId: user.id,
+        purchaseId: purchase.id,
+        subject,
+        body,
+        searchTermId: searchTerm?.id || null,
+      });
+    }
+
+    aiResult = await this.aiResultRepository.save(aiResult);
+
+    // Reload with relation
+    return this.aiResultRepository.findOne({
+      where: { id: aiResult.id },
+      relations: ['searchTerm'],
+    });
+  }
+
+  async getAiResult(
+    purchaseId: string,
+    userId: string,
+  ): Promise<PurchaseAiResult | null> {
+    return this.aiResultRepository.findOne({
+      where: { userId, purchaseId },
+      relations: ['searchTerm'],
+    });
   }
 }

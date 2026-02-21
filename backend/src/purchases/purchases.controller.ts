@@ -88,6 +88,22 @@ export class PurchasesController {
     return this.purchasesService.getFileText(fileId);
   }
 
+  @Post(':purchaseId/prepare')
+  preparePurchase(
+    @Param('purchaseId') purchaseId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.preparePurchase(purchaseId, user);
+  }
+
+  @Get(':purchaseId/ai-result')
+  getAiResult(
+    @Param('purchaseId') purchaseId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.getAiResult(purchaseId, user.id);
+  }
+
   @Get(':purchaseNumber')
   async getById(@Param('purchaseNumber') purchaseNumber: string) {
     const purchase = await this.purchasesService.getById(purchaseNumber);

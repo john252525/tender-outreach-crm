@@ -21,10 +21,16 @@ export default function ProfilePage() {
     parserDocsUrl: '',
     proxyUrl: '',
   });
+  const [aiForm, setAiForm] = useState({
+    aiUrl: '',
+    aiPrompt: '',
+  });
   const [saving, setSaving] = useState(false);
   const [savingUrls, setSavingUrls] = useState(false);
+  const [savingAi, setSavingAi] = useState(false);
   const [message, setMessage] = useState('');
   const [urlMessage, setUrlMessage] = useState('');
+  const [aiMessage, setAiMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -36,6 +42,10 @@ export default function ProfilePage() {
       setUrlForm({
         parserDocsUrl: user.settings?.parserDocsUrl || '',
         proxyUrl: user.settings?.proxyUrl || '',
+      });
+      setAiForm({
+        aiUrl: user.settings?.aiUrl || '',
+        aiPrompt: user.settings?.aiPrompt || '',
       });
     }
   }, [user]);
@@ -220,6 +230,82 @@ export default function ProfilePage() {
             >
               <Save size={18} />
               {savingUrls ? 'Сохранение...' : 'Сохранить настройки'}
+            </ThemedButton>
+          </form>
+        </ThemedCard>
+
+        <ThemedCard>
+          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Настройки AI
+          </h4>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setSavingAi(true);
+              setAiMessage('');
+              try {
+                await api.patch(`/users/${user.id}`, {
+                  settings: {
+                    ...user.settings,
+                    aiUrl: aiForm.aiUrl || undefined,
+                    aiPrompt: aiForm.aiPrompt || undefined,
+                  },
+                });
+                await refetch();
+                setAiMessage('Настройки сохранены');
+              } catch (err) {
+                setAiMessage(err instanceof Error ? err.message : 'Ошибка сохранения');
+              } finally {
+                setSavingAi(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            {aiMessage && (
+              <div className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
+                {aiMessage}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                AI URL
+              </label>
+              <ThemedInput
+                type="url"
+                value={aiForm.aiUrl}
+                onChange={(e) => setAiForm((p) => ({ ...p, aiUrl: e.target.value }))}
+                placeholder="https://ai.example.com/api/chat"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                URL AI-сервиса. На этот адрес будет отправлен POST-запрос с данными закупки.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                AI промпт
+              </label>
+              <textarea
+                value={aiForm.aiPrompt}
+                onChange={(e) => setAiForm((p) => ({ ...p, aiPrompt: e.target.value }))}
+                placeholder="Проанализируй закупку и верни JSON с полями search, subject, body..."
+                rows={5}
+                className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors resize-y"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Промпт будет отправлен вместе с названием закупки и текстами сохранённых документов.
+              </p>
+            </div>
+
+            <ThemedButton
+              type="submit"
+              disabled={savingAi}
+              variant="primary"
+              className="flex items-center gap-2"
+            >
+              <Save size={18} />
+              {savingAi ? 'Сохранение...' : 'Сохранить настройки'}
             </ThemedButton>
           </form>
         </ThemedCard>
