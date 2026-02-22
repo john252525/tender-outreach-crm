@@ -106,6 +106,24 @@ export class PurchasesController {
     return this.purchasesService.getUserSearchTerms(user.id, page, limit);
   }
 
+  @Get('emails')
+  getUserEmails(
+    @CurrentUser() user: User,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+  ) {
+    return this.purchasesService.getUserEmails(user.id, page, limit);
+  }
+
+  @Get('prepared-letters')
+  getPreparedLetters(
+    @CurrentUser() user: User,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.purchasesService.getPreparedLetters(user.id, page, limit);
+  }
+
   @Post('web-search/:searchTermId')
   executeWebSearch(
     @Param('searchTermId') searchTermId: string,
@@ -120,6 +138,14 @@ export class PurchasesController {
     @CurrentUser() user: User,
   ) {
     return this.purchasesService.getWebSearchResults(searchTermId, user.id);
+  }
+
+  @Post('web-search-results/:resultId/parse-emails')
+  parseEmails(
+    @Param('resultId') resultId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.parseEmailsFromSite(resultId, user.id);
   }
 
   @Post(':purchaseId/prepare')

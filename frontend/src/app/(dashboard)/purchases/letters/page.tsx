@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
-import { PurchaseAiResult, PaginatedResponse } from '@/types';
+import { PreparedLetter, PaginatedResponse } from '@/types';
 import {
   Mail,
   ArrowLeft,
@@ -15,12 +15,13 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  AtSign,
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LettersPage() {
   const { user } = useAuth();
-  const [data, setData] = useState<PurchaseAiResult[]>([]);
+  const [data, setData] = useState<PreparedLetter[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -30,8 +31,8 @@ export default function LettersPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<PaginatedResponse<PurchaseAiResult>>(
-        `/purchases/ai-results?page=${page}&limit=${limit}`,
+      const res = await api.get<PaginatedResponse<PreparedLetter>>(
+        `/purchases/prepared-letters?page=${page}&limit=${limit}`,
       );
       setData(res.data);
       setTotal(res.total);
@@ -92,22 +93,42 @@ export default function LettersPage() {
                           {item.subject || 'Без темы'}
                         </p>
                       </div>
-                      {item.purchase && (
-                        <Link
-                          href={`/purchases/${item.purchase.purchaseNumber}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-                        >
-                          {item.purchase.purchaseNumber}
-                          <ExternalLink size={10} />
-                        </Link>
-                      )}
-                      {item.searchTerm && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <Search size={12} className="text-violet-400" />
-                          <span className="text-xs text-gray-400">{item.searchTerm.term}</span>
+                      <div className="flex flex-wrap items-center gap-3">
+                        {item.purchase && (
+                          <Link
+                            href={`/purchases/${item.purchase.purchaseNumber}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+                          >
+                            {item.purchase.purchaseNumber}
+                            <ExternalLink size={10} />
+                          </Link>
+                        )}
+                        {item.searchTerm && (
+                          <div className="flex items-center gap-1.5">
+                            <Search size={12} className="text-violet-400" />
+                            <span className="text-xs text-gray-400">{item.searchTerm.term}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Target emails */}
+                      {item.emails.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <AtSign size={12} className="text-teal-500 shrink-0" />
+                          {item.emails.map((email) => (
+                            <a
+                              key={email}
+                              href={`mailto:${email}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors"
+                            >
+                              {email}
+                            </a>
+                          ))}
                         </div>
                       )}
+
                       <p className="text-xs text-gray-400 mt-1">
                         {new Date(item.createdAt).toLocaleDateString('ru-RU', {
                           day: '2-digit',
@@ -118,8 +139,15 @@ export default function LettersPage() {
                         })}
                       </p>
                     </div>
-                    <div className="shrink-0 text-gray-400">
-                      {expandedId === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {item.emails.length > 0 && (
+                        <span className="text-xs text-teal-600 dark:text-teal-400 font-medium">
+                          {item.emails.length} адр.
+                        </span>
+                      )}
+                      <div className="text-gray-400">
+                        {expandedId === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </div>
                     </div>
                   </div>
 
@@ -148,6 +176,29 @@ export default function LettersPage() {
                         <div className="p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
                           <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-1">Поисковый запрос</p>
                           <p className="text-sm text-gray-900 dark:text-gray-100">{item.searchTerm.term}</p>
+                        </div>
+                      )}
+
+                      {item.emails.length > 0 && (
+                        <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <AtSign size={12} className="text-teal-500" />
+                            <p className="text-xs font-medium text-teal-600 dark:text-teal-400">
+                              Адреса для отправки ({item.emails.length})
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {item.emails.map((email) => (
+                              <a
+                                key={email}
+                                href={`mailto:${email}?subject=${encodeURIComponent(item.subject || '')}&body=${encodeURIComponent(item.body || '')}`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-white dark:bg-gray-800 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors"
+                              >
+                                <Mail size={10} />
+                                {email}
+                              </a>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

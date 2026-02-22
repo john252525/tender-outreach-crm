@@ -9,6 +9,9 @@ import { PurchaseAiResult } from './entities/purchase-ai-result.entity';
 import { AiSearchTerm } from './entities/ai-search-term.entity';
 import { AiSearchTermPurchase } from './entities/ai-search-term-purchase.entity';
 import { WebSearchResult } from './entities/web-search-result.entity';
+import { WebSearchResultSearchTerm } from './entities/web-search-result-search-term.entity';
+import { WebSearchResultEmail } from './entities/web-search-result-email.entity';
+import { ParsedEmail } from './entities/parsed-email.entity';
 import { PurchasesService } from './purchases.service';
 import { PurchasesController } from './purchases.controller';
 
@@ -24,6 +27,9 @@ import { PurchasesController } from './purchases.controller';
       AiSearchTerm,
       AiSearchTermPurchase,
       WebSearchResult,
+      WebSearchResultSearchTerm,
+      WebSearchResultEmail,
+      ParsedEmail,
     ]),
   ],
   controllers: [PurchasesController],

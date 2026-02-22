@@ -26,6 +26,7 @@ import {
   Sparkles,
   Search,
   Mail,
+  AtSign,
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
@@ -83,6 +84,12 @@ const navItems: NavItem[] = [
         label: 'Поисковые запросы',
         href: '/purchases/search-terms',
         icon: <Search size={16} />,
+        roles: ALL_ROLES,
+      },
+      {
+        label: 'Email-адреса',
+        href: '/purchases/emails',
+        icon: <AtSign size={16} />,
         roles: ALL_ROLES,
       },
       {

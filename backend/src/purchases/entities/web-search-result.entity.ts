@@ -5,21 +5,18 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
+  Unique,
 } from 'typeorm';
-import { AiSearchTerm } from './ai-search-term.entity';
 import { User } from '../../users/entities/user.entity';
+import { WebSearchResultSearchTerm } from './web-search-result-search-term.entity';
+import { WebSearchResultEmail } from './web-search-result-email.entity';
 
 @Entity('web_search_results')
+@Unique(['url', 'userId'])
 export class WebSearchResult {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
-  @ManyToOne(() => AiSearchTerm, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'ai_search_term_id' })
-  searchTerm: AiSearchTerm;
-
-  @Column({ name: 'ai_search_term_id' })
-  searchTermId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
@@ -27,9 +24,6 @@ export class WebSearchResult {
 
   @Column({ name: 'user_id' })
   userId: string;
-
-  @Column({ type: 'text' })
-  query: string;
 
   @Column({ type: 'text' })
   url: string;
@@ -42,6 +36,12 @@ export class WebSearchResult {
 
   @Column({ type: 'text', default: '' })
   favicon: string;
+
+  @OneToMany(() => WebSearchResultSearchTerm, (wst) => wst.webSearchResult)
+  searchTermLinks: WebSearchResultSearchTerm[];
+
+  @OneToMany(() => WebSearchResultEmail, (wse) => wse.webSearchResult)
+  emailLinks: WebSearchResultEmail[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

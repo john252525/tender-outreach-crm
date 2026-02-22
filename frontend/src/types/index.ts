@@ -141,6 +141,7 @@ export interface AiSearchTerm {
   id: string;
   term: string;
   purchases?: Purchase[];
+  sites?: WebSearchResult[];
 }
 
 export interface PurchaseAiResult {
@@ -156,12 +157,27 @@ export interface PurchaseAiResult {
 
 export interface WebSearchResult {
   id: string;
-  searchTermId: string;
-  userId: string;
-  query: string;
   url: string;
   title: string;
   snippet: string;
+  favicon: string;
+  emails: string[];
+}
+
+export interface ParsedEmailEntry {
+  email: string;
+  emailId: string;
+  sites: { id: string; url: string; title: string }[];
+  searchTerms: { id: string; term: string }[];
+}
+
+export interface PreparedLetter {
+  id: string;
+  subject: string | null;
+  body: string | null;
+  purchase: { id: string; purchaseNumber: string; objectInfo: string | null } | null;
+  searchTerm: { id: string; term: string } | null;
+  emails: string[];
   createdAt: string;
 }
 

@@ -10,6 +10,9 @@ import { PurchaseAiResult } from './entities/purchase-ai-result.entity';
 import { AiSearchTerm } from './entities/ai-search-term.entity';
 import { AiSearchTermPurchase } from './entities/ai-search-term-purchase.entity';
 import { WebSearchResult } from './entities/web-search-result.entity';
+import { WebSearchResultSearchTerm } from './entities/web-search-result-search-term.entity';
+import { WebSearchResultEmail } from './entities/web-search-result-email.entity';
+import { ParsedEmail } from './entities/parsed-email.entity';
 import { SearchPurchasesDto } from './dto/search-purchases.dto';
 
 @Injectable()
@@ -35,13 +38,18 @@ export class PurchasesService {
     private readonly aiSearchTermPurchaseRepository: Repository<AiSearchTermPurchase>,
     @InjectRepository(WebSearchResult)
     private readonly webSearchResultRepository: Repository<WebSearchResult>,
+    @InjectRepository(WebSearchResultSearchTerm)
+    private readonly webSearchResultSearchTermRepository: Repository<WebSearchResultSearchTerm>,
+    @InjectRepository(WebSearchResultEmail)
+    private readonly webSearchResultEmailRepository: Repository<WebSearchResultEmail>,
+    @InjectRepository(ParsedEmail)
+    private readonly parsedEmailRepository: Repository<ParsedEmail>,
   ) {}
 
   async search(
     dto: SearchPurchasesDto,
     userId: string,
   ): Promise<{ results: Purchase[]; debugUrl: string; searchQueryId: string }> {
-    // Build params only with explicitly provided values
     const params = new URLSearchParams();
 
     params.set('limit', String(dto.limit ?? 10));
@@ -79,7 +87,6 @@ export class PurchasesService {
     const url = `https://v2.gosplan.info/fz44/purchases?${params.toString()}`;
     this.logger.debug(`Search URL: ${url}`);
 
-    // Save search query
     const searchQuery = this.searchQueryRepository.create({
       userId,
       queryParams: dto as unknown as Record<string, unknown>,
@@ -150,12 +157,10 @@ export class PurchasesService {
           purchase = await this.purchaseRepository.save(purchase);
         }
 
-        // Fetch detail if not yet fetched
         if (!purchase.detailFetchedAt) {
           await this.fetchAndStoreDetail(purchase);
         }
 
-        // Reload with files
         purchase = await this.purchaseRepository.findOne({
           where: { id: purchase.id },
           relations: ['files'],
@@ -164,7 +169,6 @@ export class PurchasesService {
         if (purchase) {
           results.push(purchase);
 
-          // Record in user_purchase_history
           const historyEntry = this.historyRepository.create({
             userId,
             purchaseId: purchase.id,
@@ -172,7 +176,6 @@ export class PurchasesService {
           });
           await this.historyRepository.save(historyEntry);
 
-          // Upsert found_purchase (user + purchase unique)
           const existing = await this.foundPurchaseRepository.findOne({
             where: { userId, purchaseId: purchase.id },
           });
@@ -193,7 +196,6 @@ export class PurchasesService {
       }
     }
 
-    // Update results count
     savedSearchQuery.resultsCount = results.length;
     await this.searchQueryRepository.save(savedSearchQuery);
 
@@ -296,7 +298,6 @@ export class PurchasesService {
     });
 
     if (!foundPurchase) {
-      // Auto-create if user tries to favorite a purchase they haven't found yet
       foundPurchase = this.foundPurchaseRepository.create({
         userId,
         purchaseId,
@@ -311,7 +312,7 @@ export class PurchasesService {
     return { isFavorite: foundPurchase.isFavorite };
   }
 
-  // --- View history (existing) ---
+  // --- View history ---
 
   async getHistory(
     userId: string,
@@ -528,7 +529,6 @@ export class PurchasesService {
       throw new NotFoundException('Закупка не найдена');
     }
 
-    // Build %DATA%: prompt + purchase title + all saved document texts
     const savedFiles = (purchase.files || []).filter((f) => f.parsedText);
     const docTexts = savedFiles
       .map((f, i) => `--- Документ ${i + 1}: ${f.fileName || f.docDescription || 'Без названия'} ---\n${f.parsedText}`)
@@ -540,7 +540,6 @@ export class PurchasesService {
       docTexts ? `\n${docTexts}` : '',
     ].join('\n');
 
-    // POST to AI URL
     let aiResponse: any;
     try {
       const response = await fetch(aiUrl, {
@@ -560,11 +559,9 @@ export class PurchasesService {
       throw new BadRequestException(`Ошибка AI API: ${error.message}`);
     }
 
-    // Parse answer - may be raw JSON or wrapped in markdown ```json ... ```
     let parsed: { search?: string; subject?: string; body?: string };
     try {
       let answerStr = aiResponse.answer || '';
-      // Strip markdown code block wrapping
       const jsonMatch = answerStr.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (jsonMatch) {
         answerStr = jsonMatch[1].trim();
@@ -579,7 +576,6 @@ export class PurchasesService {
     const subject = (parsed.subject || '').trim() || null;
     const body = (parsed.body || '').trim() || null;
 
-    // Upsert ai_search_term
     let searchTerm: AiSearchTerm | null = null;
     if (searchText) {
       searchTerm = await this.aiSearchTermRepository.findOne({
@@ -590,7 +586,6 @@ export class PurchasesService {
         searchTerm = await this.aiSearchTermRepository.save(searchTerm);
       }
 
-      // Upsert junction
       const existingJunction = await this.aiSearchTermPurchaseRepository.findOne({
         where: {
           searchTermId: searchTerm.id,
@@ -608,7 +603,6 @@ export class PurchasesService {
       }
     }
 
-    // Upsert purchase_ai_result
     let aiResult = await this.aiResultRepository.findOne({
       where: { userId: user.id, purchaseId: purchase.id },
       relations: ['searchTerm'],
@@ -630,7 +624,6 @@ export class PurchasesService {
 
     aiResult = await this.aiResultRepository.save(aiResult);
 
-    // Reload with relation
     const reloaded = await this.aiResultRepository.findOne({
       where: { id: aiResult.id },
       relations: ['searchTerm'],
@@ -676,14 +669,12 @@ export class PurchasesService {
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: any[]; total: number }> {
-    // Get unique search terms for this user
     const allJunctions = await this.aiSearchTermPurchaseRepository.find({
       where: { userId },
       relations: ['searchTerm', 'purchase'],
       order: { createdAt: 'DESC' },
     });
 
-    // Group purchases by search term
     const termMap = new Map<string, { term: AiSearchTerm; purchases: Purchase[] }>();
     for (const j of allJunctions) {
       if (!j.searchTerm) continue;
@@ -700,21 +691,46 @@ export class PurchasesService {
     const skip = (page - 1) * limit;
     const paged = allTerms.slice(skip, skip + limit);
 
-    return {
-      data: paged.map((t) => ({
+    // Enrich with web search results + emails per term
+    const enriched = [];
+    for (const t of paged) {
+      const wsrtLinks = await this.webSearchResultSearchTermRepository.find({
+        where: { searchTermId: t.term.id },
+        relations: ['webSearchResult', 'webSearchResult.emailLinks', 'webSearchResult.emailLinks.parsedEmail'],
+      });
+
+      const sites = wsrtLinks
+        .filter((l) => l.webSearchResult && l.webSearchResult.userId === userId)
+        .map((l) => {
+          const emails = (l.webSearchResult.emailLinks || [])
+            .filter((el) => el.parsedEmail)
+            .map((el) => el.parsedEmail.email);
+          return {
+            id: l.webSearchResult.id,
+            url: l.webSearchResult.url,
+            title: l.webSearchResult.title,
+            snippet: l.webSearchResult.snippet,
+            favicon: l.webSearchResult.favicon,
+            emails,
+          };
+        });
+
+      enriched.push({
         ...t.term,
         purchases: t.purchases,
-      })),
-      total,
-    };
+        sites,
+      });
+    }
+
+    return { data: enriched, total };
   }
 
-  // --- Execute web search ---
+  // --- Execute web search (with dedup) ---
 
   async executeWebSearch(
     searchTermId: string,
     user: { id: string; settings?: { searchApiUrl?: string } | null },
-  ): Promise<WebSearchResult[]> {
+  ): Promise<any[]> {
     const searchApiUrl = user.settings?.searchApiUrl;
     if (!searchApiUrl) {
       throw new BadRequestException('Настройте Search API URL в профиле');
@@ -744,25 +760,61 @@ export class PurchasesService {
         throw new Error('Invalid search API response');
       }
 
-      // Delete old results for this term+user
-      await this.webSearchResultRepository.delete({
-        searchTermId: term.id,
-        userId: user.id,
-      });
-
-      // Save new results
-      const results: WebSearchResult[] = [];
+      const results: any[] = [];
       for (const item of data.results) {
-        const result = this.webSearchResultRepository.create({
-          searchTermId: term.id,
-          userId: user.id,
-          query: term.term,
-          url: item.url || '',
-          title: item.title || '',
-          snippet: item.snippet || '',
-          favicon: item.favicon || '',
+        const itemUrl = (item.url || '').trim();
+        if (!itemUrl) continue;
+
+        // Upsert WebSearchResult by (url, userId)
+        let wsr = await this.webSearchResultRepository.findOne({
+          where: { url: itemUrl, userId: user.id },
         });
-        results.push(await this.webSearchResultRepository.save(result));
+
+        if (!wsr) {
+          wsr = this.webSearchResultRepository.create({
+            userId: user.id,
+            url: itemUrl,
+            title: item.title || '',
+            snippet: item.snippet || '',
+            favicon: item.favicon || '',
+          });
+          wsr = await this.webSearchResultRepository.save(wsr);
+        } else {
+          wsr.title = item.title || wsr.title;
+          wsr.snippet = item.snippet || wsr.snippet;
+          wsr.favicon = item.favicon || wsr.favicon;
+          wsr = await this.webSearchResultRepository.save(wsr);
+        }
+
+        // Upsert junction to search term
+        const existingLink = await this.webSearchResultSearchTermRepository.findOne({
+          where: { webSearchResultId: wsr.id, searchTermId: term.id },
+        });
+        if (!existingLink) {
+          const link = this.webSearchResultSearchTermRepository.create({
+            webSearchResultId: wsr.id,
+            searchTermId: term.id,
+          });
+          await this.webSearchResultSearchTermRepository.save(link);
+        }
+
+        // Load emails for this result
+        const emailLinks = await this.webSearchResultEmailRepository.find({
+          where: { webSearchResultId: wsr.id },
+          relations: ['parsedEmail'],
+        });
+        const emails = emailLinks
+          .filter((el) => el.parsedEmail)
+          .map((el) => el.parsedEmail.email);
+
+        results.push({
+          id: wsr.id,
+          url: wsr.url,
+          title: wsr.title,
+          snippet: wsr.snippet,
+          favicon: wsr.favicon,
+          emails,
+        });
       }
 
       return results;
@@ -777,10 +829,244 @@ export class PurchasesService {
   async getWebSearchResults(
     searchTermId: string,
     userId: string,
-  ): Promise<WebSearchResult[]> {
-    return this.webSearchResultRepository.find({
-      where: { searchTermId, userId },
+  ): Promise<any[]> {
+    const links = await this.webSearchResultSearchTermRepository.find({
+      where: { searchTermId },
+      relations: ['webSearchResult', 'webSearchResult.emailLinks', 'webSearchResult.emailLinks.parsedEmail'],
       order: { createdAt: 'ASC' },
     });
+
+    return links
+      .filter((l) => l.webSearchResult && l.webSearchResult.userId === userId)
+      .map((l) => {
+        const emails = (l.webSearchResult.emailLinks || [])
+          .filter((el) => el.parsedEmail)
+          .map((el) => el.parsedEmail.email);
+        return {
+          id: l.webSearchResult.id,
+          url: l.webSearchResult.url,
+          title: l.webSearchResult.title,
+          snippet: l.webSearchResult.snippet,
+          favicon: l.webSearchResult.favicon,
+          emails,
+        };
+      });
+  }
+
+  // --- Parse emails from a website ---
+
+  async parseEmailsFromSite(
+    webSearchResultId: string,
+    userId: string,
+  ): Promise<{ emails: string[] }> {
+    const wsr = await this.webSearchResultRepository.findOne({
+      where: { id: webSearchResultId, userId },
+    });
+
+    if (!wsr) {
+      throw new NotFoundException('Результат поиска не найден');
+    }
+
+    let html: string;
+    try {
+      const response = await fetch(wsr.url, {
+        signal: AbortSignal.timeout(30000),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Site returned status ${response.status}`);
+      }
+
+      html = await response.text();
+    } catch (error) {
+      this.logger.error(`Failed to fetch site ${wsr.url}: ${error.message}`);
+      throw new BadRequestException(`Ошибка загрузки сайта: ${error.message}`);
+    }
+
+    // Extract emails via regex
+    const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+    const rawEmails = html.match(emailRegex) || [];
+
+    // Normalize: lowercase, deduplicate
+    const uniqueEmails = [...new Set(rawEmails.map((e) => e.toLowerCase()))];
+
+    // Filter out false positives
+    const filteredEmails = uniqueEmails.filter((email) => {
+      if (/\.(png|jpg|jpeg|gif|svg|webp|ico|css|js)$/i.test(email)) return false;
+      if (email.length > 254) return false;
+      return true;
+    });
+
+    const savedEmails: string[] = [];
+
+    for (const emailStr of filteredEmails) {
+      // Upsert ParsedEmail
+      let parsedEmail = await this.parsedEmailRepository.findOne({
+        where: { email: emailStr },
+      });
+      if (!parsedEmail) {
+        parsedEmail = this.parsedEmailRepository.create({ email: emailStr });
+        parsedEmail = await this.parsedEmailRepository.save(parsedEmail);
+      }
+
+      // Upsert junction
+      const existingLink = await this.webSearchResultEmailRepository.findOne({
+        where: { webSearchResultId: wsr.id, parsedEmailId: parsedEmail.id },
+      });
+      if (!existingLink) {
+        const link = this.webSearchResultEmailRepository.create({
+          webSearchResultId: wsr.id,
+          parsedEmailId: parsedEmail.id,
+        });
+        await this.webSearchResultEmailRepository.save(link);
+      }
+
+      savedEmails.push(emailStr);
+    }
+
+    return { emails: savedEmails };
+  }
+
+  // --- Get all parsed emails for user ---
+
+  async getUserEmails(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ data: any[]; total: number }> {
+    const wsrWithEmails = await this.webSearchResultRepository.find({
+      where: { userId },
+      relations: [
+        'emailLinks',
+        'emailLinks.parsedEmail',
+        'searchTermLinks',
+        'searchTermLinks.searchTerm',
+      ],
+    });
+
+    // Build map: email -> { sites, searchTerms }
+    const emailMap = new Map<string, {
+      email: string;
+      emailId: string;
+      sites: { id: string; url: string; title: string }[];
+      searchTerms: { id: string; term: string }[];
+    }>();
+
+    for (const wsr of wsrWithEmails) {
+      const wsrSearchTerms = (wsr.searchTermLinks || [])
+        .filter((l) => l.searchTerm)
+        .map((l) => ({ id: l.searchTerm.id, term: l.searchTerm.term }));
+
+      for (const el of (wsr.emailLinks || [])) {
+        if (!el.parsedEmail) continue;
+        const email = el.parsedEmail.email;
+
+        if (!emailMap.has(email)) {
+          emailMap.set(email, {
+            email,
+            emailId: el.parsedEmail.id,
+            sites: [],
+            searchTerms: [],
+          });
+        }
+
+        const entry = emailMap.get(email)!;
+
+        if (!entry.sites.find((s) => s.id === wsr.id)) {
+          entry.sites.push({ id: wsr.id, url: wsr.url, title: wsr.title });
+        }
+
+        for (const st of wsrSearchTerms) {
+          if (!entry.searchTerms.find((t) => t.id === st.id)) {
+            entry.searchTerms.push(st);
+          }
+        }
+      }
+    }
+
+    const allEmails = Array.from(emailMap.values());
+    allEmails.sort((a, b) => a.email.localeCompare(b.email));
+    const total = allEmails.length;
+    const skip = (page - 1) * limit;
+    const paged = allEmails.slice(skip, skip + limit);
+
+    return { data: paged, total };
+  }
+
+  // --- Get prepared letters with target emails ---
+
+  async getPreparedLetters(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ data: any[]; total: number }> {
+    const aiResults = await this.aiResultRepository.find({
+      where: { userId },
+      relations: ['purchase', 'searchTerm'],
+      order: { createdAt: 'DESC' },
+    });
+
+    const letters: any[] = [];
+
+    for (const aiResult of aiResults) {
+      if (!aiResult.searchTerm) {
+        letters.push({
+          id: aiResult.id,
+          subject: aiResult.subject,
+          body: aiResult.body,
+          purchase: aiResult.purchase ? {
+            id: aiResult.purchase.id,
+            purchaseNumber: aiResult.purchase.purchaseNumber,
+            objectInfo: aiResult.purchase.objectInfo,
+          } : null,
+          searchTerm: null,
+          emails: [],
+          createdAt: aiResult.createdAt,
+        });
+        continue;
+      }
+
+      // Trace: searchTerm -> webSearchResults -> emails
+      const wsrtLinks = await this.webSearchResultSearchTermRepository.find({
+        where: { searchTermId: aiResult.searchTerm.id },
+        relations: ['webSearchResult', 'webSearchResult.emailLinks', 'webSearchResult.emailLinks.parsedEmail'],
+      });
+
+      const emailsSet = new Set<string>();
+      for (const l of wsrtLinks) {
+        if (!l.webSearchResult || l.webSearchResult.userId !== userId) continue;
+        for (const el of (l.webSearchResult.emailLinks || [])) {
+          if (el.parsedEmail) {
+            emailsSet.add(el.parsedEmail.email);
+          }
+        }
+      }
+
+      letters.push({
+        id: aiResult.id,
+        subject: aiResult.subject,
+        body: aiResult.body,
+        purchase: aiResult.purchase ? {
+          id: aiResult.purchase.id,
+          purchaseNumber: aiResult.purchase.purchaseNumber,
+          objectInfo: aiResult.purchase.objectInfo,
+        } : null,
+        searchTerm: {
+          id: aiResult.searchTerm.id,
+          term: aiResult.searchTerm.term,
+        },
+        emails: Array.from(emailsSet).sort(),
+        createdAt: aiResult.createdAt,
+      });
+    }
+
+    const total = letters.length;
+    const skip = (page - 1) * limit;
+    const paged = letters.slice(skip, skip + limit);
+
+    return { data: paged, total };
   }
 }
