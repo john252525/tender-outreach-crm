@@ -42,7 +42,8 @@ class ApiClient {
         });
         if (!retryResponse.ok) {
           const error = await retryResponse.json().catch(() => ({}));
-          throw new Error(error.message || 'Ошибка запроса');
+          const msg = typeof error.message === 'string' ? error.message : 'Ошибка запроса';
+          throw new Error(msg);
         }
         return retryResponse.json();
       }
@@ -57,7 +58,8 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Ошибка запроса');
+      const msg = typeof error.message === 'string' ? error.message : 'Ошибка запроса';
+      throw new Error(msg);
     }
 
     return response.json();

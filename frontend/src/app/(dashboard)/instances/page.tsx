@@ -230,7 +230,14 @@ export default function InstancesPage() {
                                 {client.state ? 'Online' : 'Offline'}
                               </span>
                             </span>
-                            {client.step && <span>Step: {client.step}</span>}
+                            {client.step && (
+                              <span>
+                                Step:{' '}
+                                {typeof client.step === 'string'
+                                  ? client.step
+                                  : client.step.message || client.step.value}
+                              </span>
+                            )}
                             <span>
                               Добавлен: {new Date(client.addedTime).toLocaleDateString('ru-RU')}
                             </span>

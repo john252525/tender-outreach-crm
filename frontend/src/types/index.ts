@@ -40,7 +40,7 @@ export interface TouchApiClient {
   owner: string;
   state: boolean;
   activated: boolean;
-  step: string | null;
+  step: string | { message: string; value: string } | null;
   addedTime: number;
   webhookUrls: string[];
   defaultState: boolean;
