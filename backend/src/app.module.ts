@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SshServersModule } from './ssh-servers/ssh-servers.module';
 import { PurchasesModule } from './purchases/purchases.module';
+import { TouchApiModule } from './touch-api/touch-api.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PurchasesModule } from './purchases/purchases.module';
     UsersModule,
     SshServersModule,
     PurchasesModule,
+    TouchApiModule,
   ],
 })
 export class AppModule {}

@@ -44,6 +44,7 @@ export class User {
     aiUrl?: string;
     aiPrompt?: string;
     searchApiUrl?: string;
+    touchApiToken?: string;
   } | null;
 
   @CreateDateColumn({ name: 'created_at' })

@@ -31,6 +31,31 @@ export interface UserSettings {
   aiUrl?: string;
   aiPrompt?: string;
   searchApiUrl?: string;
+  touchApiToken?: string;
+}
+
+export interface TouchApiClient {
+  _id: string;
+  login: string;
+  owner: string;
+  state: boolean;
+  activated: boolean;
+  step: string | null;
+  addedTime: number;
+  webhookUrls: string[];
+  defaultState: boolean;
+}
+
+export interface TouchApiInfo {
+  clients: TouchApiClient[];
+  summary: {
+    active: number;
+    activated: number;
+    demo: number;
+    count: number;
+    payment: { mode: string; balance: number };
+  };
+  status: string;
 }
 
 export interface User {

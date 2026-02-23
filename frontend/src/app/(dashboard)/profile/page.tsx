@@ -26,12 +26,17 @@ export default function ProfilePage() {
     aiPrompt: '',
     searchApiUrl: '',
   });
+  const [touchForm, setTouchForm] = useState({
+    touchApiToken: '',
+  });
   const [saving, setSaving] = useState(false);
   const [savingUrls, setSavingUrls] = useState(false);
   const [savingAi, setSavingAi] = useState(false);
+  const [savingTouch, setSavingTouch] = useState(false);
   const [message, setMessage] = useState('');
   const [urlMessage, setUrlMessage] = useState('');
   const [aiMessage, setAiMessage] = useState('');
+  const [touchMessage, setTouchMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -48,6 +53,9 @@ export default function ProfilePage() {
         aiUrl: user.settings?.aiUrl || '',
         aiPrompt: user.settings?.aiPrompt || '',
         searchApiUrl: user.settings?.searchApiUrl || '',
+      });
+      setTouchForm({
+        touchApiToken: user.settings?.touchApiToken || '',
       });
     }
   }, [user]);
@@ -324,6 +332,64 @@ export default function ProfilePage() {
             >
               <Save size={18} />
               {savingAi ? 'Сохранение...' : 'Сохранить настройки'}
+            </ThemedButton>
+          </form>
+        </ThemedCard>
+        <ThemedCard>
+          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            TouchAPI (WhatsApp)
+          </h4>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setSavingTouch(true);
+              setTouchMessage('');
+              try {
+                await api.patch(`/users/${user.id}`, {
+                  settings: {
+                    ...user.settings,
+                    touchApiToken: touchForm.touchApiToken || undefined,
+                  },
+                });
+                await refetch();
+                setTouchMessage('Токен сохранён');
+              } catch (err) {
+                setTouchMessage(err instanceof Error ? err.message : 'Ошибка сохранения');
+              } finally {
+                setSavingTouch(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            {touchMessage && (
+              <div className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
+                {touchMessage}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                TouchAPI Token
+              </label>
+              <ThemedInput
+                type="text"
+                value={touchForm.touchApiToken}
+                onChange={(e) => setTouchForm((p) => ({ ...p, touchApiToken: e.target.value }))}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Токен для управления WhatsApp-инстансами через TouchAPI.
+              </p>
+            </div>
+
+            <ThemedButton
+              type="submit"
+              disabled={savingTouch}
+              variant="primary"
+              className="flex items-center gap-2"
+            >
+              <Save size={18} />
+              {savingTouch ? 'Сохранение...' : 'Сохранить токен'}
             </ThemedButton>
           </form>
         </ThemedCard>

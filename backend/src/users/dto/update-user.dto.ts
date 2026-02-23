@@ -31,6 +31,10 @@ class UserSettingsDto {
   @IsOptional()
   @IsString()
   searchApiUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  touchApiToken?: string;
 }
 
 export class UpdateUserDto {

@@ -27,6 +27,7 @@ import {
   Search,
   Mail,
   AtSign,
+  Smartphone,
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
@@ -99,6 +100,12 @@ const navItems: NavItem[] = [
         roles: ALL_ROLES,
       },
     ],
+  },
+  {
+    label: 'Instances',
+    href: '/instances',
+    icon: <Smartphone size={20} />,
+    roles: ALL_ROLES,
   },
   {
     label: 'Пользователи',
