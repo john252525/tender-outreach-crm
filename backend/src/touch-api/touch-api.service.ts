@@ -17,13 +17,26 @@ export class TouchApiService {
     body: Record<string, unknown>,
     timeout = 15000,
   ): Promise<any> {
-    const res = await fetch(`${BASE_URL}/${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeout),
-    });
-    return res.json();
+    let res: Response;
+    try {
+      res = await fetch(`${BASE_URL}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeout),
+      });
+    } catch (error: any) {
+      throw new BadRequestException(
+        `TouchAPI ${endpoint}: ${error?.message || 'network error'}`,
+      );
+    }
+    try {
+      return await res.json();
+    } catch {
+      throw new BadRequestException(
+        `TouchAPI ${endpoint}: invalid response (status ${res.status})`,
+      );
+    }
   }
 
   async getInfo(
@@ -72,7 +85,10 @@ export class TouchApiService {
     source = 'whatsapp',
   ): Promise<any> {
     const token = this.getToken(user);
-    await this.post('forceStop', { source, token, login });
+    // forceStop may fail if already stopped — non-fatal
+    try {
+      await this.post('forceStop', { source, token, login });
+    } catch {}
     return this.post('deleteAccount', { source, token, login });
   }
 
@@ -82,7 +98,10 @@ export class TouchApiService {
     source = 'whatsapp',
   ): Promise<any> {
     const token = this.getToken(user);
-    await this.post('forceStop', { source, token, login });
+    // forceStop may fail if already stopped — non-fatal
+    try {
+      await this.post('forceStop', { source, token, login });
+    } catch {}
     await this.post('clearSession', { source, token, login });
     await this.post('setState', { source, token, login, setState: true }, 30000);
     return this.post('getQr', { source, token, login });

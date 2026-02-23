@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
@@ -31,6 +31,20 @@ const SOURCES = [
   { value: 'max', label: 'MAX' },
 ];
 
+const SOURCE_COLORS: Record<string, string> = {
+  whatsapp: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  telegram: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  sms: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  'telegram-bot': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+  'viber-bot': 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+  vk: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  max: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+};
+
+interface ClientWithSource extends TouchApiClient {
+  source: string;
+}
+
 async function extractQrUrl(data: any): Promise<string | null> {
   // Direct QR image (base64 or URL)
   const qr = data?.qr;
@@ -50,10 +64,22 @@ async function extractQrUrl(data: any): Promise<string | null> {
   return null;
 }
 
+function formatAddedTime(addedTime: number | string | null | undefined): string {
+  if (!addedTime) return '—';
+  let ts = typeof addedTime === 'string' ? parseInt(addedTime, 10) : addedTime;
+  if (isNaN(ts)) return '—';
+  // If timestamp looks like seconds (< year ~2001 in ms), convert to ms
+  if (ts > 0 && ts < 1e12) ts *= 1000;
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('ru-RU');
+}
+
 export default function InstancesPage() {
   const { user } = useAuth();
-  const [source, setSource] = useState('whatsapp');
-  const [info, setInfo] = useState<TouchApiInfo | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [allClients, setAllClients] = useState<ClientWithSource[]>([]);
+  const [summaries, setSummaries] = useState<Record<string, TouchApiInfo['summary']>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -71,6 +97,7 @@ export default function InstancesPage() {
   // Image modal (QR or screenshot)
   const [imageModal, setImageModal] = useState<{
     login: string;
+    source: string;
     title: string;
     url: string | null;
     loading: boolean;
@@ -78,7 +105,29 @@ export default function InstancesPage() {
 
   const hasToken = !!user?.settings?.touchApiToken;
 
-  const fetchInfo = useCallback(async () => {
+  // Fetch a single source and update state
+  const fetchSource = useCallback(
+    async (src: string) => {
+      try {
+        const data = await api.get<TouchApiInfo>(
+          `/touch-api/info?source=${encodeURIComponent(src)}`,
+        );
+        if (data.status === 'ok') {
+          setAllClients((prev) => [
+            ...prev.filter((c) => c.source !== src),
+            ...data.clients.map((c) => ({ ...c, source: src })),
+          ]);
+          setSummaries((prev) => ({ ...prev, [src]: data.summary }));
+        }
+      } catch {
+        // individual source failure is non-fatal
+      }
+    },
+    [],
+  );
+
+  // Fetch all sources in parallel
+  const fetchAll = useCallback(async () => {
     if (!hasToken) {
       setLoading(false);
       return;
@@ -86,21 +135,78 @@ export default function InstancesPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.get<TouchApiInfo>(`/touch-api/info?source=${encodeURIComponent(source)}`);
-      if (data.status !== 'ok') {
-        throw new Error('Ошибка получения данных от TouchAPI');
+      const results = await Promise.allSettled(
+        SOURCES.map((s) =>
+          api.get<TouchApiInfo>(`/touch-api/info?source=${encodeURIComponent(s.value)}`),
+        ),
+      );
+
+      const clients: ClientWithSource[] = [];
+      const sums: Record<string, TouchApiInfo['summary']> = {};
+
+      results.forEach((result, i) => {
+        if (result.status === 'fulfilled' && result.value.status === 'ok') {
+          const src = SOURCES[i].value;
+          sums[src] = result.value.summary;
+          result.value.clients.forEach((c) => {
+            clients.push({ ...c, source: src });
+          });
+        }
+      });
+
+      setAllClients(clients);
+      setSummaries(sums);
+
+      if (clients.length === 0 && results.every((r) => r.status === 'rejected')) {
+        setError('Ошибка загрузки данных от TouchAPI');
       }
-      setInfo(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка загрузки');
     } finally {
       setLoading(false);
     }
-  }, [hasToken, source]);
+  }, [hasToken]);
 
   useEffect(() => {
-    fetchInfo();
-  }, [fetchInfo]);
+    fetchAll();
+  }, [fetchAll]);
+
+  // Filtered clients based on active tab
+  const filteredClients = useMemo(
+    () =>
+      activeTab === 'all'
+        ? allClients
+        : allClients.filter((c) => c.source === activeTab),
+    [allClients, activeTab],
+  );
+
+  // Count per source for tab badges
+  const countBySource = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allClients.forEach((c) => {
+      counts[c.source] = (counts[c.source] || 0) + 1;
+    });
+    return counts;
+  }, [allClients]);
+
+  // Summary for current view
+  const currentSummary = useMemo(() => {
+    if (activeTab !== 'all') return summaries[activeTab] || null;
+    // Aggregate
+    let active = 0;
+    let count = 0;
+    let hasPayment = false;
+    let balance = 0;
+    Object.values(summaries).forEach((s) => {
+      active += s.active ?? 0;
+      count += s.count ?? 0;
+      if (s.payment != null) {
+        hasPayment = true;
+        balance += s.payment.balance;
+      }
+    });
+    return { active, count, payment: hasPayment ? { mode: '', balance } : undefined };
+  }, [summaries, activeTab]);
 
   // --- Add Instance ---
   const handleAdd = useCallback(async () => {
@@ -114,12 +220,7 @@ export default function InstancesPage() {
       });
       if (res.status === 'ok') {
         setAddModalOpen(false);
-        // Switch view to the source we just added to
-        if (addSource !== source) {
-          setSource(addSource);
-        } else {
-          await fetchInfo();
-        }
+        await fetchSource(addSource);
       } else {
         alert('Ошибка создания инстанса');
       }
@@ -128,11 +229,11 @@ export default function InstancesPage() {
     } finally {
       setAdding(false);
     }
-  }, [adding, addSource, source, fetchInfo]);
+  }, [adding, addSource, fetchSource]);
 
   // --- Toggle State (on/off) ---
   const handleToggleState = useCallback(
-    async (client: TouchApiClient) => {
+    async (client: ClientWithSource) => {
       if (togglingLogin) return;
       const newState = !client.state;
       setTogglingLogin(client.login);
@@ -140,103 +241,104 @@ export default function InstancesPage() {
         await api.post('/touch-api/set-state', {
           login: client.login,
           state: newState,
-          source,
+          source: client.source,
         });
 
         if (newState) {
           // After starting, wait then fetch QR
           await new Promise((r) => setTimeout(r, 3000));
-          setImageModal({ login: client.login, title: 'QR-код', url: null, loading: true });
+          setImageModal({ login: client.login, source: client.source, title: 'QR-код', url: null, loading: true });
           try {
             const data = await api.post<any>('/touch-api/get-qr', {
               login: client.login,
-              source,
+              source: client.source,
             });
             const qrUrl = await extractQrUrl(data);
-            setImageModal({ login: client.login, title: 'QR-код', url: qrUrl, loading: false });
+            setImageModal({ login: client.login, source: client.source, title: 'QR-код', url: qrUrl, loading: false });
           } catch {
-            setImageModal({ login: client.login, title: 'QR-код', url: null, loading: false });
+            setImageModal({ login: client.login, source: client.source, title: 'QR-код', url: null, loading: false });
           }
         }
 
-        await fetchInfo();
+        await fetchSource(client.source);
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Ошибка');
       } finally {
         setTogglingLogin(null);
       }
     },
-    [togglingLogin, source, fetchInfo],
+    [togglingLogin, fetchSource],
   );
 
   // --- Get QR ---
   const handleShowQr = useCallback(
-    async (login: string) => {
-      setImageModal({ login, title: 'QR-код', url: null, loading: true });
+    async (login: string, clientSource: string) => {
+      setImageModal({ login, source: clientSource, title: 'QR-код', url: null, loading: true });
       try {
-        const data = await api.post<any>('/touch-api/get-qr', { login, source });
+        const data = await api.post<any>('/touch-api/get-qr', { login, source: clientSource });
         const qrUrl = await extractQrUrl(data);
-        setImageModal({ login, title: 'QR-код', url: qrUrl, loading: false });
+        setImageModal({ login, source: clientSource, title: 'QR-код', url: qrUrl, loading: false });
       } catch {
-        setImageModal({ login, title: 'QR-код', url: null, loading: false });
+        setImageModal({ login, source: clientSource, title: 'QR-код', url: null, loading: false });
       }
     },
-    [source],
+    [],
   );
 
   // --- Screenshot ---
   const handleShowScreenshot = useCallback(
-    async (login: string) => {
-      setImageModal({ login, title: 'Скриншот', url: null, loading: true });
+    async (login: string, clientSource: string) => {
+      setImageModal({ login, source: clientSource, title: 'Скриншот', url: null, loading: true });
       try {
         const data = await api.get<{ url: string }>(
-          `/touch-api/screenshot?login=${encodeURIComponent(login)}&source=${encodeURIComponent(source)}`,
+          `/touch-api/screenshot?login=${encodeURIComponent(login)}&source=${encodeURIComponent(clientSource)}`,
         );
-        setImageModal({ login, title: 'Скриншот', url: data.url, loading: false });
+        setImageModal({ login, source: clientSource, title: 'Скриншот', url: data.url, loading: false });
       } catch {
-        setImageModal({ login, title: 'Скриншот', url: null, loading: false });
+        setImageModal({ login, source: clientSource, title: 'Скриншот', url: null, loading: false });
       }
     },
-    [source],
+    [],
   );
 
   // --- Delete ---
   const handleDelete = useCallback(
-    async (login: string) => {
+    async (login: string, clientSource: string) => {
       if (deletingLogin) return;
       setDeletingLogin(login);
       try {
-        await api.post('/touch-api/delete-account', { login, source });
+        await api.post('/touch-api/delete-account', { login, source: clientSource });
         setConfirmDelete(null);
-        await fetchInfo();
+        await fetchSource(clientSource);
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Ошибка удаления');
       } finally {
         setDeletingLogin(null);
       }
     },
-    [deletingLogin, source, fetchInfo],
+    [deletingLogin, fetchSource],
   );
 
   // --- Reset ---
   const handleReset = useCallback(
-    async (client: TouchApiClient) => {
+    async (client: ClientWithSource) => {
       if (resettingLogin) return;
       setResettingLogin(client.login);
-      setImageModal({ login: client.login, title: 'QR-код (сброс)', url: null, loading: true });
+      setImageModal({ login: client.login, source: client.source, title: 'QR-код (сброс)', url: null, loading: true });
       try {
         const data = await api.post<any>('/touch-api/reset-account', {
           login: client.login,
-          source,
+          source: client.source,
         });
         const qrUrl = await extractQrUrl(data);
         setImageModal({
           login: client.login,
+          source: client.source,
           title: 'QR-код (сброс)',
           url: qrUrl,
           loading: false,
         });
-        await fetchInfo();
+        await fetchSource(client.source);
       } catch (err) {
         setImageModal(null);
         alert(err instanceof Error ? err.message : 'Ошибка сброса');
@@ -244,12 +346,15 @@ export default function InstancesPage() {
         setResettingLogin(null);
       }
     },
-    [resettingLogin, source, fetchInfo],
+    [resettingLogin, fetchSource],
   );
 
   if (!user) return null;
 
-  const sourceLabel = SOURCES.find((s) => s.value === source)?.label || source;
+  // Find source for delete confirmation
+  const confirmDeleteClient = confirmDelete
+    ? allClients.find((c) => c.login === confirmDelete)
+    : null;
 
   return (
     <>
@@ -276,19 +381,32 @@ export default function InstancesPage() {
           <>
             {/* Source Tabs */}
             <div className="flex items-center gap-1.5 mb-5 overflow-x-auto pb-1">
-              {SOURCES.map((s) => (
-                <button
-                  key={s.value}
-                  onClick={() => setSource(s.value)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
-                    source === s.value
-                      ? 'bg-primary-600 text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+                  activeTab === 'all'
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                All{allClients.length > 0 && ` (${allClients.length})`}
+              </button>
+              {SOURCES.map((s) => {
+                const cnt = countBySource[s.value] || 0;
+                return (
+                  <button
+                    key={s.value}
+                    onClick={() => setActiveTab(s.value)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+                      activeTab === s.value
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {s.label}{cnt > 0 && ` (${cnt})`}
+                  </button>
+                );
+              })}
             </div>
 
             {loading ? (
@@ -300,7 +418,7 @@ export default function InstancesPage() {
                 <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
                 <p className="text-red-600 dark:text-red-400">{error}</p>
                 <button
-                  onClick={fetchInfo}
+                  onClick={fetchAll}
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
                 >
                   <RefreshCw size={14} />
@@ -312,25 +430,25 @@ export default function InstancesPage() {
                 {/* Summary + Actions */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
-                    {info?.summary && (
+                    {currentSummary && (
                       <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
                         <span>
                           Всего:{' '}
                           <span className="font-medium text-gray-900 dark:text-gray-100">
-                            {info.summary.count ?? 0}
+                            {currentSummary.count ?? 0}
                           </span>
                         </span>
                         <span>
                           Активных:{' '}
                           <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                            {info.summary.active ?? 0}
+                            {currentSummary.active ?? 0}
                           </span>
                         </span>
-                        {info.summary.payment != null && (
+                        {currentSummary.payment != null && (
                           <span>
                             Баланс:{' '}
                             <span className="font-medium text-gray-900 dark:text-gray-100">
-                              {info.summary.payment.balance}
+                              {currentSummary.payment.balance}
                             </span>
                           </span>
                         )}
@@ -339,7 +457,7 @@ export default function InstancesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={fetchInfo}
+                      onClick={fetchAll}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
                       <RefreshCw size={14} />
@@ -347,7 +465,7 @@ export default function InstancesPage() {
                     </button>
                     <button
                       onClick={() => {
-                        setAddSource(source);
+                        setAddSource(activeTab !== 'all' ? activeTab : 'whatsapp');
                         setAddModalOpen(true);
                       }}
                       className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
@@ -359,11 +477,11 @@ export default function InstancesPage() {
                 </div>
 
                 {/* Instances list */}
-                {!info || info.clients.length === 0 ? (
+                {filteredClients.length === 0 ? (
                   <div className="card text-center py-12">
                     <Smartphone size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
                     <p className="text-gray-500 dark:text-gray-400">
-                      Нет инстансов ({sourceLabel})
+                      Нет инстансов
                     </p>
                     <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                       Нажмите &quot;Add Instance&quot; чтобы создать
@@ -371,130 +489,136 @@ export default function InstancesPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {info.clients.map((client) => (
-                      <div key={client._id} className="card hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 min-w-0 flex-1">
-                            {/* Status indicator */}
-                            <div
-                              className={`w-3 h-3 rounded-full shrink-0 ${
-                                client.state
-                                  ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50'
-                                  : 'bg-gray-300 dark:bg-gray-600'
-                              }`}
-                            />
+                    {filteredClients.map((client) => {
+                      const srcLabel = SOURCES.find((s) => s.value === client.source)?.label || client.source;
+                      const srcColor = SOURCE_COLORS[client.source] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+                      return (
+                        <div key={client._id} className="card hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                              {/* Status indicator */}
+                              <div
+                                className={`w-3 h-3 rounded-full shrink-0 ${
+                                  client.state
+                                    ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50'
+                                    : 'bg-gray-300 dark:bg-gray-600'
+                                }`}
+                              />
 
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate font-mono">
-                                  {client.login}
-                                </p>
-                                {client.activated && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                    Activated
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${srcColor}`}>
+                                    {srcLabel}
                                   </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                <span>
-                                  Статус:{' '}
-                                  <span
-                                    className={
-                                      client.state
-                                        ? 'text-emerald-600 dark:text-emerald-400 font-medium'
-                                        : ''
-                                    }
-                                  >
-                                    {client.state ? 'Online' : 'Offline'}
-                                  </span>
-                                </span>
-                                {client.step && (
+                                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate font-mono">
+                                    {client.login}
+                                  </p>
+                                  {client.activated && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                      Activated
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
                                   <span>
-                                    Step:{' '}
-                                    {typeof client.step === 'string'
-                                      ? client.step
-                                      : client.step.message || client.step.value}
+                                    Статус:{' '}
+                                    <span
+                                      className={
+                                        client.state
+                                          ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                                          : ''
+                                      }
+                                    >
+                                      {client.state ? 'Online' : 'Offline'}
+                                    </span>
                                   </span>
-                                )}
-                                <span>
-                                  Добавлен:{' '}
-                                  {new Date(client.addedTime).toLocaleDateString('ru-RU')}
-                                </span>
+                                  {client.step && (
+                                    <span>
+                                      Step:{' '}
+                                      {typeof client.step === 'string'
+                                        ? client.step
+                                        : client.step.message || client.step.value}
+                                    </span>
+                                  )}
+                                  <span>
+                                    Добавлен: {formatAddedTime(client.addedTime)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {/* Screenshot (small icon, only online) */}
-                            {client.state && (
-                              <button
-                                onClick={() => handleShowScreenshot(client.login)}
-                                title="Скриншот"
-                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-                              >
-                                <Monitor size={14} />
-                              </button>
-                            )}
-
-                            {/* QR (only online) */}
-                            {client.state && (
-                              <button
-                                onClick={() => handleShowQr(client.login)}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                              >
-                                <QrCode size={12} />
-                                QR
-                              </button>
-                            )}
-
-                            {/* Reset */}
-                            <button
-                              onClick={() => handleReset(client)}
-                              disabled={resettingLogin === client.login}
-                              title="Сброс"
-                              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
-                            >
-                              {resettingLogin === client.login ? (
-                                <Loader2 size={12} className="animate-spin" />
-                              ) : (
-                                <RotateCcw size={12} />
+                            {/* Actions */}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {/* Screenshot (small icon, only online) */}
+                              {client.state && (
+                                <button
+                                  onClick={() => handleShowScreenshot(client.login, client.source)}
+                                  title="Скриншот"
+                                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                  <Monitor size={14} />
+                                </button>
                               )}
-                              Reset
-                            </button>
 
-                            {/* Toggle on/off */}
-                            <button
-                              onClick={() => handleToggleState(client)}
-                              disabled={togglingLogin === client.login}
-                              className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
-                                client.state
-                                  ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50'
-                                  : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
-                              }`}
-                            >
-                              {togglingLogin === client.login ? (
-                                <Loader2 size={12} className="animate-spin" />
-                              ) : client.state ? (
-                                <PowerOff size={12} />
-                              ) : (
-                                <Power size={12} />
+                              {/* QR (only online) */}
+                              {client.state && (
+                                <button
+                                  onClick={() => handleShowQr(client.login, client.source)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                >
+                                  <QrCode size={12} />
+                                  QR
+                                </button>
                               )}
-                              {client.state ? 'Выкл' : 'Вкл'}
-                            </button>
 
-                            {/* Delete */}
-                            <button
-                              onClick={() => setConfirmDelete(client.login)}
-                              title="Удалить"
-                              className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-900/30"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                              {/* Reset */}
+                              <button
+                                onClick={() => handleReset(client)}
+                                disabled={resettingLogin === client.login}
+                                title="Сброс"
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+                              >
+                                {resettingLogin === client.login ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                  <RotateCcw size={12} />
+                                )}
+                                Reset
+                              </button>
+
+                              {/* Toggle on/off */}
+                              <button
+                                onClick={() => handleToggleState(client)}
+                                disabled={togglingLogin === client.login}
+                                className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                                  client.state
+                                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50'
+                                    : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                                }`}
+                              >
+                                {togglingLogin === client.login ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : client.state ? (
+                                  <PowerOff size={12} />
+                                ) : (
+                                  <Power size={12} />
+                                )}
+                                {client.state ? 'Выкл' : 'Вкл'}
+                              </button>
+
+                              {/* Delete */}
+                              <button
+                                onClick={() => setConfirmDelete(client.login)}
+                                title="Удалить"
+                                className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-900/30"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -595,7 +719,7 @@ export default function InstancesPage() {
                   Отмена
                 </button>
                 <button
-                  onClick={() => handleDelete(confirmDelete)}
+                  onClick={() => handleDelete(confirmDelete, confirmDeleteClient?.source || (activeTab !== 'all' ? activeTab : 'whatsapp'))}
                   disabled={!!deletingLogin}
                   className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
@@ -665,9 +789,9 @@ export default function InstancesPage() {
                   <button
                     onClick={() => {
                       if (imageModal.title.includes('QR')) {
-                        handleShowQr(imageModal.login);
+                        handleShowQr(imageModal.login, imageModal.source);
                       } else {
-                        handleShowScreenshot(imageModal.login);
+                        handleShowScreenshot(imageModal.login, imageModal.source);
                       }
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
