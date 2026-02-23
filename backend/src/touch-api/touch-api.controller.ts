@@ -20,16 +20,17 @@ export class TouchApiController {
   constructor(private readonly touchApiService: TouchApiService) {}
 
   @Get('info')
-  getInfo(@CurrentUser() user: User) {
-    return this.touchApiService.getInfo(user);
+  getInfo(@CurrentUser() user: User, @Query('source') source?: string) {
+    return this.touchApiService.getInfo(user, source);
   }
 
   @Post('add-account')
   addAccount(
     @CurrentUser() user: User,
     @Body('login') login: string,
+    @Body('source') source?: string,
   ) {
-    return this.touchApiService.addAccount(user, login);
+    return this.touchApiService.addAccount(user, login, source);
   }
 
   @Post('set-state')
@@ -37,15 +38,44 @@ export class TouchApiController {
     @CurrentUser() user: User,
     @Body('login') login: string,
     @Body('state') state: boolean,
+    @Body('source') source?: string,
   ) {
-    return this.touchApiService.setState(user, login, state);
+    return this.touchApiService.setState(user, login, state, source);
+  }
+
+  @Post('get-qr')
+  getQr(
+    @CurrentUser() user: User,
+    @Body('login') login: string,
+    @Body('source') source?: string,
+  ) {
+    return this.touchApiService.getQr(user, login, source);
+  }
+
+  @Post('delete-account')
+  deleteAccount(
+    @CurrentUser() user: User,
+    @Body('login') login: string,
+    @Body('source') source?: string,
+  ) {
+    return this.touchApiService.deleteAccount(user, login, source);
+  }
+
+  @Post('reset-account')
+  resetAccount(
+    @CurrentUser() user: User,
+    @Body('login') login: string,
+    @Body('source') source?: string,
+  ) {
+    return this.touchApiService.resetAccount(user, login, source);
   }
 
   @Get('screenshot')
   getScreenshot(
     @CurrentUser() user: User,
     @Query('login') login: string,
+    @Query('source') source?: string,
   ) {
-    return this.touchApiService.getScreenshot(user, login);
+    return this.touchApiService.getScreenshot(user, login, source);
   }
 }

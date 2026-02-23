@@ -12,63 +12,90 @@ export class TouchApiService {
     return token;
   }
 
-  async getInfo(user: { settings?: { touchApiToken?: string } | null }): Promise<any> {
-    const token = this.getToken(user);
-    const res = await fetch(`${BASE_URL}/getInfoByToken`, {
+  private async post(
+    endpoint: string,
+    body: Record<string, unknown>,
+    timeout = 15000,
+  ): Promise<any> {
+    const res = await fetch(`${BASE_URL}/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'whatsapp', token }),
-      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeout),
     });
     return res.json();
   }
 
-  async addAccount(user: { settings?: { touchApiToken?: string } | null }, login: string): Promise<any> {
+  async getInfo(
+    user: { settings?: { touchApiToken?: string } | null },
+    source = 'whatsapp',
+  ): Promise<any> {
     const token = this.getToken(user);
-    const res = await fetch(`${BASE_URL}/addAccount`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'whatsapp', token, login }),
-      signal: AbortSignal.timeout(15000),
-    });
-    return res.json();
+    return this.post('getInfoByToken', { source, token });
+  }
+
+  async addAccount(
+    user: { settings?: { touchApiToken?: string } | null },
+    login: string,
+    source = 'whatsapp',
+  ): Promise<any> {
+    const token = this.getToken(user);
+    return this.post('addAccount', { source, token, login });
   }
 
   async setState(
     user: { settings?: { touchApiToken?: string } | null },
     login: string,
     state: boolean,
+    source = 'whatsapp',
   ): Promise<any> {
     const token = this.getToken(user);
-
     if (state) {
-      const res = await fetch(`${BASE_URL}/setState`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'whatsapp', token, login, setState: true }),
-        signal: AbortSignal.timeout(30000),
-      });
-      return res.json();
+      return this.post('setState', { source, token, login, setState: true }, 30000);
     } else {
-      const res = await fetch(`${BASE_URL}/forceStop`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: 'whatsapp', token, login }),
-        signal: AbortSignal.timeout(15000),
-      });
-      return res.json();
+      return this.post('forceStop', { source, token, login });
     }
+  }
+
+  async getQr(
+    user: { settings?: { touchApiToken?: string } | null },
+    login: string,
+    source = 'whatsapp',
+  ): Promise<any> {
+    const token = this.getToken(user);
+    return this.post('getQr', { source, token, login });
+  }
+
+  async deleteAccount(
+    user: { settings?: { touchApiToken?: string } | null },
+    login: string,
+    source = 'whatsapp',
+  ): Promise<any> {
+    const token = this.getToken(user);
+    await this.post('forceStop', { source, token, login });
+    return this.post('deleteAccount', { source, token, login });
+  }
+
+  async resetAccount(
+    user: { settings?: { touchApiToken?: string } | null },
+    login: string,
+    source = 'whatsapp',
+  ): Promise<any> {
+    const token = this.getToken(user);
+    await this.post('forceStop', { source, token, login });
+    await this.post('clearSession', { source, token, login });
+    await this.post('setState', { source, token, login, setState: true }, 30000);
+    return this.post('getQr', { source, token, login });
   }
 
   async getScreenshot(
     user: { settings?: { touchApiToken?: string } | null },
     login: string,
+    source = 'whatsapp',
   ): Promise<{ url: string }> {
     const token = this.getToken(user);
-    // The screenshot endpoint returns a 307 redirect to the actual image.
-    // We return the URL for the frontend to load directly as <img>.
     return {
-      url: `${BASE_URL}/screenshot?source=whatsapp&token=${encodeURIComponent(token)}&login=${encodeURIComponent(login)}`,
+      url: `${BASE_URL}/screenshot?source=${encodeURIComponent(source)}&token=${encodeURIComponent(token)}&login=${encodeURIComponent(login)}`,
     };
   }
 }
