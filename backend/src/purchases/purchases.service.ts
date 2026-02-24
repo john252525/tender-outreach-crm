@@ -13,6 +13,7 @@ import { WebSearchResult } from './entities/web-search-result.entity';
 import { WebSearchResultSearchTerm } from './entities/web-search-result-search-term.entity';
 import { WebSearchResultEmail } from './entities/web-search-result-email.entity';
 import { ParsedEmail } from './entities/parsed-email.entity';
+import { EmailBlacklist } from './entities/email-blacklist.entity';
 import { SearchPurchasesDto } from './dto/search-purchases.dto';
 
 @Injectable()
@@ -44,7 +45,45 @@ export class PurchasesService {
     private readonly webSearchResultEmailRepository: Repository<WebSearchResultEmail>,
     @InjectRepository(ParsedEmail)
     private readonly parsedEmailRepository: Repository<ParsedEmail>,
+    @InjectRepository(EmailBlacklist)
+    private readonly blacklistRepository: Repository<EmailBlacklist>,
   ) {}
+
+  // --- Email Blacklist ---
+
+  private async getBlacklistedEmails(userId: string): Promise<Set<string>> {
+    const items = await this.blacklistRepository.find({ where: { userId } });
+    return new Set(items.map((i) => i.email.toLowerCase()));
+  }
+
+  async getBlacklist(
+    userId: string,
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<{ data: EmailBlacklist[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const [data, total] = await this.blacklistRepository.findAndCount({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+    });
+    return { data, total };
+  }
+
+  async addToBlacklist(userId: string, email: string): Promise<EmailBlacklist> {
+    const normalized = email.toLowerCase().trim();
+    const existing = await this.blacklistRepository.findOne({
+      where: { userId, email: normalized },
+    });
+    if (existing) return existing;
+    const entry = this.blacklistRepository.create({ userId, email: normalized });
+    return this.blacklistRepository.save(entry);
+  }
+
+  async removeFromBlacklist(userId: string, email: string): Promise<void> {
+    await this.blacklistRepository.delete({ userId, email: email.toLowerCase().trim() });
+  }
 
   async search(
     dto: SearchPurchasesDto,
@@ -958,6 +997,7 @@ export class PurchasesService {
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: any[]; total: number }> {
+    const blacklisted = await this.getBlacklistedEmails(userId);
     const wsrWithEmails = await this.webSearchResultRepository.find({
       where: { userId },
       relations: [
@@ -984,6 +1024,7 @@ export class PurchasesService {
       for (const el of (wsr.emailLinks || [])) {
         if (!el.parsedEmail) continue;
         const email = el.parsedEmail.email;
+        if (blacklisted.has(email.toLowerCase())) continue;
 
         if (!emailMap.has(email)) {
           emailMap.set(email, {
@@ -1024,6 +1065,7 @@ export class PurchasesService {
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: any[]; total: number }> {
+    const blacklisted = await this.getBlacklistedEmails(userId);
     const aiResults = await this.aiResultRepository.find({
       where: { userId },
       relations: ['purchase', 'searchTerm'],
@@ -1060,7 +1102,7 @@ export class PurchasesService {
       for (const l of wsrtLinks) {
         if (!l.webSearchResult || l.webSearchResult.userId !== userId) continue;
         for (const el of (l.webSearchResult.emailLinks || [])) {
-          if (el.parsedEmail) {
+          if (el.parsedEmail && !blacklisted.has(el.parsedEmail.email.toLowerCase())) {
             emailsSet.add(el.parsedEmail.email);
           }
         }

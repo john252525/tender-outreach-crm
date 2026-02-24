@@ -45,6 +45,17 @@ export class User {
     aiPrompt?: string;
     searchApiUrl?: string;
     touchApiToken?: string;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpUser?: string;
+    smtpPass?: string;
+    smtpSecure?: boolean;
+    imapHost?: string;
+    imapPort?: number;
+    imapUser?: string;
+    imapPass?: string;
+    imapSecure?: boolean;
+    emailFrom?: string;
   } | null;
 
   @CreateDateColumn({ name: 'created_at' })

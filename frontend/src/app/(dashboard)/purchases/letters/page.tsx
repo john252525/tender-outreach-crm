@@ -16,6 +16,9 @@ import {
   ChevronDown,
   ChevronUp,
   AtSign,
+  Send,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +29,8 @@ export default function LettersPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
   const limit = 20;
 
   const fetchData = useCallback(async () => {
@@ -46,6 +51,26 @@ export default function LettersPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleSendLetter = async (item: PreparedLetter) => {
+    if (!item.emails.length || !item.body || sendingId) return;
+    setSendingId(item.id);
+    try {
+      for (const email of item.emails) {
+        await api.post('/emails/send', {
+          to: email,
+          subject: item.subject || '',
+          body: item.body,
+          purchaseId: item.purchase?.id || undefined,
+        });
+      }
+      setSentIds((prev) => new Set(prev).add(item.id));
+    } catch {
+      // ignore
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   const totalPages = Math.ceil(total / limit);
 
@@ -200,6 +225,35 @@ export default function LettersPage() {
                             ))}
                           </div>
                         </div>
+                      )}
+
+                      {/* Send via SMTP button */}
+                      {item.emails.length > 0 && item.body && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSendLetter(item);
+                          }}
+                          disabled={sendingId === item.id || sentIds.has(item.id)}
+                          className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                            sentIds.has(item.id)
+                              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                              : 'bg-primary-600 text-white hover:bg-primary-700'
+                          }`}
+                        >
+                          {sendingId === item.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : sentIds.has(item.id) ? (
+                            <Check size={14} />
+                          ) : (
+                            <Send size={14} />
+                          )}
+                          {sendingId === item.id
+                            ? 'Отправка...'
+                            : sentIds.has(item.id)
+                              ? 'Отправлено'
+                              : `Отправить через SMTP (${item.emails.length})`}
+                        </button>
                       )}
                     </div>
                   )}

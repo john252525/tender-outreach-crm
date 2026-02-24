@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
+  Body,
   Param,
   Query,
   UseGuards,
@@ -179,6 +181,31 @@ export class PurchasesController {
     @CurrentUser() user: User,
   ) {
     return this.purchasesService.getPurchasePipelineDetail(purchaseId, user.id);
+  }
+
+  @Get('blacklist')
+  getBlacklist(
+    @CurrentUser() user: User,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+  ) {
+    return this.purchasesService.getBlacklist(user.id, page, limit);
+  }
+
+  @Post('blacklist')
+  addToBlacklist(
+    @CurrentUser() user: User,
+    @Body('email') email: string,
+  ) {
+    return this.purchasesService.addToBlacklist(user.id, email);
+  }
+
+  @Delete('blacklist/:email')
+  removeFromBlacklist(
+    @CurrentUser() user: User,
+    @Param('email') email: string,
+  ) {
+    return this.purchasesService.removeFromBlacklist(user.id, email);
   }
 
   @Get(':purchaseNumber')

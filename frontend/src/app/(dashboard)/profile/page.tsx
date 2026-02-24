@@ -29,14 +29,33 @@ export default function ProfilePage() {
   const [touchForm, setTouchForm] = useState({
     touchApiToken: '',
   });
+  const [smtpForm, setSmtpForm] = useState({
+    smtpHost: '',
+    smtpPort: '',
+    smtpUser: '',
+    smtpPass: '',
+    smtpSecure: false,
+    emailFrom: '',
+  });
+  const [imapForm, setImapForm] = useState({
+    imapHost: '',
+    imapPort: '',
+    imapUser: '',
+    imapPass: '',
+    imapSecure: true,
+  });
   const [saving, setSaving] = useState(false);
   const [savingUrls, setSavingUrls] = useState(false);
   const [savingAi, setSavingAi] = useState(false);
   const [savingTouch, setSavingTouch] = useState(false);
+  const [savingSmtp, setSavingSmtp] = useState(false);
+  const [savingImap, setSavingImap] = useState(false);
   const [message, setMessage] = useState('');
   const [urlMessage, setUrlMessage] = useState('');
   const [aiMessage, setAiMessage] = useState('');
   const [touchMessage, setTouchMessage] = useState('');
+  const [smtpMessage, setSmtpMessage] = useState('');
+  const [imapMessage, setImapMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -56,6 +75,21 @@ export default function ProfilePage() {
       });
       setTouchForm({
         touchApiToken: user.settings?.touchApiToken || '',
+      });
+      setSmtpForm({
+        smtpHost: user.settings?.smtpHost || '',
+        smtpPort: user.settings?.smtpPort?.toString() || '',
+        smtpUser: user.settings?.smtpUser || '',
+        smtpPass: user.settings?.smtpPass || '',
+        smtpSecure: user.settings?.smtpSecure ?? false,
+        emailFrom: user.settings?.emailFrom || '',
+      });
+      setImapForm({
+        imapHost: user.settings?.imapHost || '',
+        imapPort: user.settings?.imapPort?.toString() || '',
+        imapUser: user.settings?.imapUser || '',
+        imapPass: user.settings?.imapPass || '',
+        imapSecure: user.settings?.imapSecure ?? true,
       });
     }
   }, [user]);
@@ -390,6 +424,216 @@ export default function ProfilePage() {
             >
               <Save size={18} />
               {savingTouch ? 'Сохранение...' : 'Сохранить токен'}
+            </ThemedButton>
+          </form>
+        </ThemedCard>
+        <ThemedCard>
+          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            SMTP (отправка почты)
+          </h4>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setSavingSmtp(true);
+              setSmtpMessage('');
+              try {
+                await api.patch(`/users/${user.id}`, {
+                  settings: {
+                    ...user.settings,
+                    smtpHost: smtpForm.smtpHost || undefined,
+                    smtpPort: smtpForm.smtpPort ? parseInt(smtpForm.smtpPort, 10) : undefined,
+                    smtpUser: smtpForm.smtpUser || undefined,
+                    smtpPass: smtpForm.smtpPass || undefined,
+                    smtpSecure: smtpForm.smtpSecure,
+                    emailFrom: smtpForm.emailFrom || undefined,
+                  },
+                });
+                await refetch();
+                setSmtpMessage('Настройки SMTP сохранены');
+              } catch (err) {
+                setSmtpMessage(err instanceof Error ? err.message : 'Ошибка сохранения');
+              } finally {
+                setSavingSmtp(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            {smtpMessage && (
+              <div className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
+                {smtpMessage}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SMTP Host</label>
+                <ThemedInput
+                  type="text"
+                  value={smtpForm.smtpHost}
+                  onChange={(e) => setSmtpForm((p) => ({ ...p, smtpHost: e.target.value }))}
+                  placeholder="smtp.gmail.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SMTP Port</label>
+                <ThemedInput
+                  type="number"
+                  value={smtpForm.smtpPort}
+                  onChange={(e) => setSmtpForm((p) => ({ ...p, smtpPort: e.target.value }))}
+                  placeholder="587"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Логин</label>
+                <ThemedInput
+                  type="text"
+                  value={smtpForm.smtpUser}
+                  onChange={(e) => setSmtpForm((p) => ({ ...p, smtpUser: e.target.value }))}
+                  placeholder="user@gmail.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль</label>
+                <ThemedInput
+                  type="password"
+                  value={smtpForm.smtpPass}
+                  onChange={(e) => setSmtpForm((p) => ({ ...p, smtpPass: e.target.value }))}
+                  placeholder="app password"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email From</label>
+              <ThemedInput
+                type="email"
+                value={smtpForm.emailFrom}
+                onChange={(e) => setSmtpForm((p) => ({ ...p, emailFrom: e.target.value }))}
+                placeholder="noreply@company.com (необязательно, по умолчанию логин)"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={smtpForm.smtpSecure}
+                onChange={(e) => setSmtpForm((p) => ({ ...p, smtpSecure: e.target.checked }))}
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              SSL/TLS (порт 465)
+            </label>
+
+            <ThemedButton
+              type="submit"
+              disabled={savingSmtp}
+              variant="primary"
+              className="flex items-center gap-2"
+            >
+              <Save size={18} />
+              {savingSmtp ? 'Сохранение...' : 'Сохранить SMTP'}
+            </ThemedButton>
+          </form>
+        </ThemedCard>
+
+        <ThemedCard>
+          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            IMAP (получение почты)
+          </h4>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setSavingImap(true);
+              setImapMessage('');
+              try {
+                await api.patch(`/users/${user.id}`, {
+                  settings: {
+                    ...user.settings,
+                    imapHost: imapForm.imapHost || undefined,
+                    imapPort: imapForm.imapPort ? parseInt(imapForm.imapPort, 10) : undefined,
+                    imapUser: imapForm.imapUser || undefined,
+                    imapPass: imapForm.imapPass || undefined,
+                    imapSecure: imapForm.imapSecure,
+                  },
+                });
+                await refetch();
+                setImapMessage('Настройки IMAP сохранены');
+              } catch (err) {
+                setImapMessage(err instanceof Error ? err.message : 'Ошибка сохранения');
+              } finally {
+                setSavingImap(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            {imapMessage && (
+              <div className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm px-4 py-3 rounded-lg border border-green-200 dark:border-green-800">
+                {imapMessage}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IMAP Host</label>
+                <ThemedInput
+                  type="text"
+                  value={imapForm.imapHost}
+                  onChange={(e) => setImapForm((p) => ({ ...p, imapHost: e.target.value }))}
+                  placeholder="imap.gmail.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IMAP Port</label>
+                <ThemedInput
+                  type="number"
+                  value={imapForm.imapPort}
+                  onChange={(e) => setImapForm((p) => ({ ...p, imapPort: e.target.value }))}
+                  placeholder="993"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Логин</label>
+                <ThemedInput
+                  type="text"
+                  value={imapForm.imapUser}
+                  onChange={(e) => setImapForm((p) => ({ ...p, imapUser: e.target.value }))}
+                  placeholder="user@gmail.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Пароль</label>
+                <ThemedInput
+                  type="password"
+                  value={imapForm.imapPass}
+                  onChange={(e) => setImapForm((p) => ({ ...p, imapPass: e.target.value }))}
+                  placeholder="app password"
+                />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={imapForm.imapSecure}
+                onChange={(e) => setImapForm((p) => ({ ...p, imapSecure: e.target.checked }))}
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              SSL/TLS (порт 993)
+            </label>
+
+            <ThemedButton
+              type="submit"
+              disabled={savingImap}
+              variant="primary"
+              className="flex items-center gap-2"
+            >
+              <Save size={18} />
+              {savingImap ? 'Сохранение...' : 'Сохранить IMAP'}
             </ThemedButton>
           </form>
         </ThemedCard>

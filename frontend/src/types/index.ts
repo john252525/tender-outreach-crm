@@ -32,6 +32,17 @@ export interface UserSettings {
   aiPrompt?: string;
   searchApiUrl?: string;
   touchApiToken?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpSecure?: boolean;
+  imapHost?: string;
+  imapPort?: number;
+  imapUser?: string;
+  imapPass?: string;
+  imapSecure?: boolean;
+  emailFrom?: string;
 }
 
 export interface TouchApiClient {
@@ -240,4 +251,37 @@ export interface SearchResponse {
   results: Purchase[];
   debugUrl: string;
   searchQueryId: string;
+}
+
+export interface BlacklistEntry {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface EmailThread {
+  contactEmail: string;
+  messageCount: number;
+  unreadCount: number;
+  lastMessageAt: string;
+  lastMessage: {
+    id: string;
+    direction: 'sent' | 'received';
+    subject: string;
+    preview: string;
+  } | null;
+}
+
+export interface EmailMessage {
+  id: string;
+  direction: 'sent' | 'received';
+  contactEmail: string;
+  subject: string;
+  bodyText: string;
+  bodyHtml: string | null;
+  messageId: string | null;
+  inReplyTo: string | null;
+  purchaseId: string | null;
+  isRead: boolean;
+  createdAt: string;
 }

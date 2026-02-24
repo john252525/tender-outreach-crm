@@ -28,6 +28,9 @@ import {
   Mail,
   AtSign,
   Smartphone,
+  Ban,
+  Inbox,
+  Send,
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
@@ -97,6 +100,18 @@ const navItems: NavItem[] = [
         label: 'Подготовленные письма',
         href: '/purchases/letters',
         icon: <Mail size={16} />,
+        roles: ALL_ROLES,
+      },
+      {
+        label: 'Чёрный список',
+        href: '/purchases/blacklist',
+        icon: <Ban size={16} />,
+        roles: ALL_ROLES,
+      },
+      {
+        label: 'Почта',
+        href: '/purchases/mail',
+        icon: <Inbox size={16} />,
         roles: ALL_ROLES,
       },
     ],

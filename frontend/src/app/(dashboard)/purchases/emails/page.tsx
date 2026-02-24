@@ -13,6 +13,8 @@ import {
   Globe,
   Search,
   ExternalLink,
+  Ban,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,6 +24,7 @@ export default function EmailsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [banningEmail, setBanningEmail] = useState<string | null>(null);
   const limit = 50;
 
   const fetchData = useCallback(async () => {
@@ -42,6 +45,18 @@ export default function EmailsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleBan = async (email: string) => {
+    setBanningEmail(email);
+    try {
+      await api.post('/purchases/blacklist', { email });
+      await fetchData();
+    } catch {
+      // ignore
+    } finally {
+      setBanningEmail(null);
+    }
+  };
 
   const totalPages = Math.ceil(total / limit);
 
@@ -84,12 +99,26 @@ export default function EmailsPage() {
                   <div className="flex items-start gap-3">
                     <AtSign size={16} className="text-teal-500 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                      <a
-                        href={`mailto:${entry.email}`}
-                        className="text-sm font-medium text-teal-700 dark:text-teal-400 hover:underline"
-                      >
-                        {entry.email}
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`mailto:${entry.email}`}
+                          className="text-sm font-medium text-teal-700 dark:text-teal-400 hover:underline"
+                        >
+                          {entry.email}
+                        </a>
+                        <button
+                          onClick={() => handleBan(entry.email)}
+                          disabled={banningEmail === entry.email}
+                          title="В чёрный список"
+                          className="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50"
+                        >
+                          {banningEmail === entry.email ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Ban size={12} />
+                          )}
+                        </button>
+                      </div>
 
                       {/* Sites */}
                       {entry.sites.length > 0 && (

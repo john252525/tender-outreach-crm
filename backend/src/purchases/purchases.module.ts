@@ -12,6 +12,7 @@ import { WebSearchResult } from './entities/web-search-result.entity';
 import { WebSearchResultSearchTerm } from './entities/web-search-result-search-term.entity';
 import { WebSearchResultEmail } from './entities/web-search-result-email.entity';
 import { ParsedEmail } from './entities/parsed-email.entity';
+import { EmailBlacklist } from './entities/email-blacklist.entity';
 import { PurchasesService } from './purchases.service';
 import { PurchasesController } from './purchases.controller';
 
@@ -30,6 +31,7 @@ import { PurchasesController } from './purchases.controller';
       WebSearchResultSearchTerm,
       WebSearchResultEmail,
       ParsedEmail,
+      EmailBlacklist,
     ]),
   ],
   controllers: [PurchasesController],
