@@ -107,6 +107,41 @@ export class TouchApiService {
     return this.post('getQr', { source, token, login });
   }
 
+  async getChats(
+    user: { settings?: { touchApiToken?: string } | null },
+    login: string,
+    source = 'whatsapp',
+  ): Promise<any> {
+    const token = this.getToken(user);
+    return this.post('getChats', { source, token, login }, 30000);
+  }
+
+  async getChatMessages(
+    user: { settings?: { touchApiToken?: string } | null },
+    login: string,
+    to: string,
+    source = 'whatsapp',
+  ): Promise<any> {
+    const token = this.getToken(user);
+    return this.post('getChatMessages', { source, token, login, to }, 30000);
+  }
+
+  async sendMessage(
+    user: { settings?: { touchApiToken?: string } | null },
+    login: string,
+    to: string,
+    text: string,
+    source = 'whatsapp',
+    content?: Array<{ type: string; src: string; filename?: string }>,
+  ): Promise<any> {
+    const token = this.getToken(user);
+    const msg: Record<string, unknown> = { to, text };
+    if (content && content.length > 0) {
+      msg.content = content;
+    }
+    return this.post('sendMessage', { source, token, login, msg }, 30000);
+  }
+
   async getScreenshot(
     user: { settings?: { touchApiToken?: string } | null },
     login: string,

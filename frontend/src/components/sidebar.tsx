@@ -31,6 +31,7 @@ import {
   Ban,
   Inbox,
   Send,
+  MessageCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
@@ -120,6 +121,12 @@ const navItems: NavItem[] = [
     label: 'Instances',
     href: '/instances',
     icon: <Smartphone size={20} />,
+    roles: ALL_ROLES,
+  },
+  {
+    label: 'Мессенджер',
+    href: '/messenger',
+    icon: <MessageCircle size={20} />,
     roles: ALL_ROLES,
   },
   {

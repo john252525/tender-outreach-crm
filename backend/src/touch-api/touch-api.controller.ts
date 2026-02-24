@@ -70,6 +70,37 @@ export class TouchApiController {
     return this.touchApiService.resetAccount(user, login, source);
   }
 
+  @Post('get-chats')
+  getChats(
+    @CurrentUser() user: User,
+    @Body('login') login: string,
+    @Body('source') source?: string,
+  ) {
+    return this.touchApiService.getChats(user, login, source);
+  }
+
+  @Post('get-chat-messages')
+  getChatMessages(
+    @CurrentUser() user: User,
+    @Body('login') login: string,
+    @Body('to') to: string,
+    @Body('source') source?: string,
+  ) {
+    return this.touchApiService.getChatMessages(user, login, to, source);
+  }
+
+  @Post('send-message')
+  sendMessage(
+    @CurrentUser() user: User,
+    @Body('login') login: string,
+    @Body('to') to: string,
+    @Body('text') text: string,
+    @Body('source') source?: string,
+    @Body('content') content?: Array<{ type: string; src: string; filename?: string }>,
+  ) {
+    return this.touchApiService.sendMessage(user, login, to, text, source, content);
+  }
+
   @Get('screenshot')
   getScreenshot(
     @CurrentUser() user: User,
