@@ -58,6 +58,7 @@ interface Chat {
   lastMessageTime?: number;
   unreadCount?: number;
   image?: string;
+  isGroup?: boolean;
 }
 
 interface ChatMessage {
@@ -71,6 +72,8 @@ interface ChatMessage {
   caption?: string;
   quotedMsg?: { body?: string; caption?: string } | null;
   mediaUrl?: string;
+  hasMedia?: boolean;
+  ack?: number;
 }
 
 /* ---------- component ---------- */
@@ -150,15 +153,28 @@ export default function MessengerPage() {
         source: selectedInstance.source,
       });
       const raw = res?.chats || res?.data || res || [];
-      const list: Chat[] = (Array.isArray(raw) ? raw : []).map((c: any) => ({
-        id: c.id || c.chatId || c._id || '',
-        name: c.name || c.title || c.chatId || c.id || '',
-        chatId: c.chatId || c.id || '',
-        lastMessage: c.lastMessage?.body || c.lastMessage?.text || c.lastMessage || '',
-        lastMessageTime: c.lastMessage?.time || c.lastMessageTime || c.time || 0,
-        unreadCount: c.unreadCount || c.unread || 0,
-        image: c.image || c.avatar || c.img || undefined,
-      }));
+      const list: Chat[] = (Array.isArray(raw) ? raw : []).map((c: any) => {
+        // TouchAPI: chat identifier is in 'phone' field
+        const phone = String(c.phone || '');
+        const lm = c.lastMessage;
+        const lmData = lm?._data;
+        // Body: top-level lastMessage.body, or _data.body, or type label
+        let preview = lm?.body || lmData?.body || '';
+        if (!preview && lm) {
+          const t = lm.type || lmData?.type || '';
+          if (t && t !== 'chat') preview = `[${t}]`;
+        }
+        return {
+          id: phone,
+          name: c.name || c.title || phone || '',
+          chatId: phone,
+          lastMessage: preview,
+          lastMessageTime: c.timestamp || lm?.timestamp || lmData?.t || 0,
+          unreadCount: c.unreadCount ?? 0,
+          image: c.image || c.avatar || c.img || undefined,
+          isGroup: !!c.isGroup,
+        };
+      });
       // Sort by last message time descending
       list.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
       setChats(list);
@@ -187,18 +203,29 @@ export default function MessengerPage() {
         to: chat.chatId,
       });
       const raw = res?.messages || res?.data || res || [];
-      const list: ChatMessage[] = (Array.isArray(raw) ? raw : []).map((m: any) => ({
-        id: m.id || m._id || m.messageId || String(Math.random()),
-        body: m.body || m.text || m.message || '',
-        type: m.type || 'chat',
-        fromMe: m.fromMe ?? m.from_me ?? false,
-        time: m.time || m.timestamp || 0,
-        chatId: m.chatId || chat.chatId,
-        senderName: m.senderName || m.sender || undefined,
-        caption: m.caption || undefined,
-        quotedMsg: m.quotedMsg || m.quoted || null,
-        mediaUrl: m.mediaUrl || m.media || m.url || undefined,
-      }));
+      const list: ChatMessage[] = (Array.isArray(raw) ? raw : []).map((m: any) => {
+        // TouchAPI messages: fields at top level AND in _data
+        const d = m._data || {};
+        const idObj = m.id || d.id || {};
+        const msgId =
+          typeof idObj === 'string'
+            ? idObj
+            : idObj._serialized || idObj.id || String(Math.random());
+        return {
+          id: msgId,
+          body: m.body ?? d.body ?? '',
+          type: m.type || d.type || 'chat',
+          fromMe: m.fromMe ?? idObj.fromMe ?? d.id?.fromMe ?? false,
+          time: m.timestamp || d.t || 0,
+          chatId: chat.chatId,
+          senderName: m.senderName || m._data?.notifyName || undefined,
+          caption: m.caption ?? d.caption ?? undefined,
+          quotedMsg: m.quotedMsg || d.quotedMsg || null,
+          mediaUrl: m.mediaUrl || d.mediaUrl || undefined,
+          hasMedia: m.hasMedia ?? d.hasMedia ?? false,
+          ack: m.ack ?? d.ack ?? 0,
+        };
+      });
       // Sort oldest first
       list.sort((a, b) => a.time - b.time);
       setMessages(list);
@@ -591,11 +618,15 @@ export default function MessengerPage() {
                           )}
 
                           {/* Text */}
-                          {(msg.body || msg.caption) && (
+                          {(msg.body || msg.caption) ? (
                             <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                               {msg.body || msg.caption}
                             </p>
-                          )}
+                          ) : msg.type !== 'chat' && !msg.mediaUrl ? (
+                            <p className={`text-xs italic ${msg.fromMe ? 'text-white/60' : 'text-gray-400'}`}>
+                              [{msg.type}]
+                            </p>
+                          ) : null}
 
                           {/* Time + status */}
                           <div
@@ -611,10 +642,14 @@ export default function MessengerPage() {
                               {formatTime(msg.time)}
                             </span>
                             {msg.fromMe && (
-                              <CheckCheck
-                                size={12}
-                                className="text-white/60"
-                              />
+                              msg.ack && msg.ack >= 2 ? (
+                                <CheckCheck
+                                  size={12}
+                                  className={msg.ack >= 3 ? 'text-blue-300' : 'text-white/60'}
+                                />
+                              ) : (
+                                <Check size={12} className="text-white/60" />
+                              )
                             )}
                           </div>
                         </div>
