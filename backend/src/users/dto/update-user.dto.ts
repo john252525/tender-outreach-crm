@@ -35,6 +35,50 @@ class UserSettingsDto {
   @IsOptional()
   @IsString()
   touchApiToken?: string;
+
+  @IsOptional()
+  @IsString()
+  smtpHost?: string;
+
+  @IsOptional()
+  @IsString()
+  smtpPort?: string;
+
+  @IsOptional()
+  @IsString()
+  smtpUser?: string;
+
+  @IsOptional()
+  @IsString()
+  smtpPass?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  smtpSecure?: boolean;
+
+  @IsOptional()
+  @IsString()
+  emailFrom?: string;
+
+  @IsOptional()
+  @IsString()
+  imapHost?: string;
+
+  @IsOptional()
+  @IsString()
+  imapPort?: string;
+
+  @IsOptional()
+  @IsString()
+  imapUser?: string;
+
+  @IsOptional()
+  @IsString()
+  imapPass?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  imapSecure?: boolean;
 }
 
 export class UpdateUserDto {
