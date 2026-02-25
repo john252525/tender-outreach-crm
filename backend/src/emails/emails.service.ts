@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EmailMessage } from './entities/email-message.entity';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
 
 interface SmtpSettings {
   smtpHost?: string;
@@ -53,19 +54,28 @@ export class EmailsService {
     const port = smtpPort || (smtpSecure ? 465 : 587);
     const secure = smtpSecure ?? (port === 465);
 
-    this.logger.log(`SMTP connecting to ${smtpHost}:${port} secure=${secure} user=${smtpUser}`);
+    // Resolve hostname to IPv4 (Railway has no IPv6)
+    let resolvedHost = smtpHost;
+    try {
+      const { address } = await dns.promises.lookup(smtpHost, { family: 4 });
+      resolvedHost = address;
+      this.logger.log(`SMTP resolved ${smtpHost} -> ${address}`);
+    } catch {
+      this.logger.warn(`SMTP DNS resolve failed for ${smtpHost}, using as-is`);
+    }
+
+    this.logger.log(`SMTP connecting to ${resolvedHost}:${port} secure=${secure} user=${smtpUser}`);
 
     const transporter = nodemailer.createTransport({
-      host: smtpHost,
+      host: resolvedHost,
       port,
       secure,
       auth: { user: smtpUser, pass: smtpPass },
-      tls: { rejectUnauthorized: false },
+      tls: { rejectUnauthorized: false, servername: smtpHost },
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 20000,
-      dnsOptions: { family: 4 },
-    } as any);
+    });
 
     const from = emailFrom || smtpUser;
 
