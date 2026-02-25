@@ -50,15 +50,20 @@ export class EmailsService {
       );
     }
 
+    const port = smtpPort || (smtpSecure ? 465 : 587);
+    const secure = smtpSecure ?? (port === 465);
+
+    this.logger.log(`SMTP connecting to ${smtpHost}:${port} secure=${secure} user=${smtpUser}`);
+
     const transporter = nodemailer.createTransport({
       host: smtpHost,
-      port: smtpPort || (smtpSecure ? 465 : 587),
-      secure: smtpSecure ?? false,
+      port,
+      secure,
       auth: { user: smtpUser, pass: smtpPass },
       tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
     });
 
     const from = emailFrom || smtpUser;
