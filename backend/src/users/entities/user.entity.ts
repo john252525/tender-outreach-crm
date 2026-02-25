@@ -50,6 +50,7 @@ export class User {
     smtpUser?: string;
     smtpPass?: string;
     smtpSecure?: boolean;
+    smtpRelayUrl?: string;
     imapHost?: string;
     imapPort?: number;
     imapUser?: string;

@@ -62,6 +62,10 @@ class UserSettingsDto {
 
   @IsOptional()
   @IsString()
+  smtpRelayUrl?: string;
+
+  @IsOptional()
+  @IsString()
   imapHost?: string;
 
   @IsOptional()

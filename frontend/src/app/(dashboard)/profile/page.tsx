@@ -36,6 +36,7 @@ export default function ProfilePage() {
     smtpPass: '',
     smtpSecure: false,
     emailFrom: '',
+    smtpRelayUrl: '',
   });
   const [imapForm, setImapForm] = useState({
     imapHost: '',
@@ -83,6 +84,7 @@ export default function ProfilePage() {
         smtpPass: user.settings?.smtpPass || '',
         smtpSecure: user.settings?.smtpSecure ?? false,
         emailFrom: user.settings?.emailFrom || '',
+        smtpRelayUrl: user.settings?.smtpRelayUrl || '',
       });
       setImapForm({
         imapHost: user.settings?.imapHost || '',
@@ -446,6 +448,7 @@ export default function ProfilePage() {
                     smtpPass: smtpForm.smtpPass || undefined,
                     smtpSecure: smtpForm.smtpSecure,
                     emailFrom: smtpForm.emailFrom || undefined,
+                    smtpRelayUrl: smtpForm.smtpRelayUrl || undefined,
                   },
                 });
                 await refetch();
@@ -525,6 +528,19 @@ export default function ProfilePage() {
               />
               SSL/TLS (порт 465)
             </label>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SMTP Relay URL (необязательно)</label>
+              <ThemedInput
+                type="url"
+                value={smtpForm.smtpRelayUrl}
+                onChange={(e) => setSmtpForm((p) => ({ ...p, smtpRelayUrl: e.target.value }))}
+                placeholder="https://my-vps.com/smtp-relay.php"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Если указан — письма отправляются через этот URL вместо прямого SMTP
+              </p>
+            </div>
 
             <ThemedButton
               type="submit"

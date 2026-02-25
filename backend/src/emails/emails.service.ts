@@ -12,6 +12,7 @@ interface SmtpSettings {
   smtpPass?: string;
   smtpSecure?: boolean;
   emailFrom?: string;
+  smtpRelayUrl?: string;
 }
 
 interface ImapSettings {
@@ -31,7 +32,7 @@ export class EmailsService {
     private readonly emailMessageRepository: Repository<EmailMessage>,
   ) {}
 
-  // --- Send email via SMTP ---
+  // --- Send email via SMTP (direct or relay) ---
 
   async sendEmail(
     userId: string,
@@ -42,8 +43,7 @@ export class EmailsService {
     purchaseId?: string,
     inReplyTo?: string,
   ): Promise<EmailMessage> {
-    const { smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, emailFrom } =
-      settings;
+    const { smtpHost, smtpUser, smtpPass, smtpRelayUrl } = settings;
 
     if (!smtpHost || !smtpUser || !smtpPass) {
       throw new BadRequestException(
@@ -51,10 +51,42 @@ export class EmailsService {
       );
     }
 
+    // Choose path: relay URL or direct SMTP
+    const messageId = smtpRelayUrl
+      ? await this.sendViaRelay(settings, to, subject, body, inReplyTo)
+      : await this.sendDirectSmtp(settings, to, subject, body, inReplyTo);
+
+    const message = this.emailMessageRepository.create({
+      userId,
+      direction: 'sent',
+      contactEmail: to.toLowerCase(),
+      subject,
+      bodyText: body,
+      messageId: messageId || null,
+      inReplyTo: inReplyTo || null,
+      purchaseId: purchaseId || null,
+      isRead: true,
+    });
+
+    return this.emailMessageRepository.save(message);
+  }
+
+  // --- Direct SMTP sending with port fallback ---
+
+  private async sendDirectSmtp(
+    settings: SmtpSettings,
+    to: string,
+    subject: string,
+    body: string,
+    inReplyTo?: string,
+  ): Promise<string | null> {
+    const { smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, emailFrom } =
+      settings;
+
     // Resolve hostname to IPv4 (Railway has no IPv6)
-    let resolvedHost = smtpHost;
+    let resolvedHost = smtpHost!;
     try {
-      const { address } = await dns.promises.lookup(smtpHost, { family: 4 });
+      const { address } = await dns.promises.lookup(smtpHost!, { family: 4 });
       resolvedHost = address;
       this.logger.log(`SMTP resolved ${smtpHost} -> ${address}`);
     } catch {
@@ -76,10 +108,8 @@ export class EmailsService {
     const attempts: Array<{ port: number; secure: boolean }> = [
       { port: primaryPort, secure: primarySecure },
     ];
-    // Add fallback: if primary is 587 -> try 465 SSL, and vice versa
     if (primaryPort === 587) attempts.push({ port: 465, secure: true });
     else if (primaryPort === 465) attempts.push({ port: 587, secure: false });
-    // Also try 25 as last resort
     if (primaryPort !== 25) attempts.push({ port: 25, secure: false });
 
     let lastError: any;
@@ -99,20 +129,7 @@ export class EmailsService {
       try {
         const info = await transporter.sendMail(mailOptions);
         this.logger.log(`SMTP sent via port ${port}, messageId=${info.messageId}`);
-
-        const message = this.emailMessageRepository.create({
-          userId,
-          direction: 'sent',
-          contactEmail: to.toLowerCase(),
-          subject,
-          bodyText: body,
-          messageId: info.messageId || null,
-          inReplyTo: inReplyTo || null,
-          purchaseId: purchaseId || null,
-          isRead: true,
-        });
-
-        return this.emailMessageRepository.save(message);
+        return info.messageId || null;
       } catch (error: any) {
         lastError = error;
         this.logger.warn(`SMTP port ${port} failed: ${error.message}`);
@@ -121,6 +138,61 @@ export class EmailsService {
 
     this.logger.error(`SMTP all attempts failed for ${smtpHost}`);
     throw new BadRequestException(`Ошибка отправки: ${lastError?.message}`);
+  }
+
+  // --- Send via external relay (PHP script on VPS) ---
+
+  private async sendViaRelay(
+    settings: SmtpSettings,
+    to: string,
+    subject: string,
+    body: string,
+    inReplyTo?: string,
+  ): Promise<string | null> {
+    const { smtpRelayUrl, smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, emailFrom } =
+      settings;
+
+    this.logger.log(`Sending via relay: ${smtpRelayUrl}`);
+
+    const payload = {
+      smtpHost,
+      smtpPort: smtpPort || (smtpSecure ? 465 : 587),
+      smtpUser,
+      smtpPass,
+      smtpSecure: !!smtpSecure,
+      emailFrom: emailFrom || smtpUser,
+      to,
+      subject,
+      body,
+      ...(inReplyTo ? { inReplyTo } : {}),
+    };
+
+    try {
+      const response = await fetch(smtpRelayUrl!, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Relay-Secret': process.env.SMTP_RELAY_SECRET || '',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        const errMsg = result.error || `Relay returned ${response.status}`;
+        this.logger.error(`Relay error: ${errMsg}`);
+        throw new BadRequestException(`Ошибка relay: ${errMsg}`);
+      }
+
+      this.logger.log(`Relay sent, messageId=${result.messageId}`);
+      return result.messageId || null;
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      this.logger.error(`Relay request failed: ${error.message}`);
+      throw new BadRequestException(`Relay недоступен: ${error.message}`);
+    }
   }
 
   // --- Fetch inbox via IMAP (using simple fetch approach) ---
