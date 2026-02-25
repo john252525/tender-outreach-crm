@@ -51,9 +51,6 @@ export class EmailsService {
       );
     }
 
-    const port = smtpPort || (smtpSecure ? 465 : 587);
-    const secure = smtpSecure ?? (port === 465);
-
     // Resolve hostname to IPv4 (Railway has no IPv6)
     let resolvedHost = smtpHost;
     try {
@@ -64,46 +61,66 @@ export class EmailsService {
       this.logger.warn(`SMTP DNS resolve failed for ${smtpHost}, using as-is`);
     }
 
-    this.logger.log(`SMTP connecting to ${resolvedHost}:${port} secure=${secure} user=${smtpUser}`);
-
-    const transporter = nodemailer.createTransport({
-      host: resolvedHost,
-      port,
-      secure,
-      auth: { user: smtpUser, pass: smtpPass },
-      tls: { rejectUnauthorized: false, servername: smtpHost },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 20000,
-    });
-
     const from = emailFrom || smtpUser;
+    const mailOptions = {
+      from,
+      to,
+      subject,
+      text: body,
+      ...(inReplyTo ? { inReplyTo, references: inReplyTo } : {}),
+    };
 
-    try {
-      const info = await transporter.sendMail({
-        from,
-        to,
-        subject,
-        text: body,
-        ...(inReplyTo ? { inReplyTo, references: inReplyTo } : {}),
+    // Build list of port/secure combos to try
+    const primaryPort = smtpPort || (smtpSecure ? 465 : 587);
+    const primarySecure = smtpSecure ?? (primaryPort === 465);
+    const attempts: Array<{ port: number; secure: boolean }> = [
+      { port: primaryPort, secure: primarySecure },
+    ];
+    // Add fallback: if primary is 587 -> try 465 SSL, and vice versa
+    if (primaryPort === 587) attempts.push({ port: 465, secure: true });
+    else if (primaryPort === 465) attempts.push({ port: 587, secure: false });
+    // Also try 25 as last resort
+    if (primaryPort !== 25) attempts.push({ port: 25, secure: false });
+
+    let lastError: any;
+    for (const { port, secure } of attempts) {
+      this.logger.log(`SMTP trying ${resolvedHost}:${port} secure=${secure}`);
+      const transporter = nodemailer.createTransport({
+        host: resolvedHost,
+        port,
+        secure,
+        auth: { user: smtpUser, pass: smtpPass },
+        tls: { rejectUnauthorized: false, servername: smtpHost },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
 
-      const message = this.emailMessageRepository.create({
-        userId,
-        direction: 'sent',
-        contactEmail: to.toLowerCase(),
-        subject,
-        bodyText: body,
-        messageId: info.messageId || null,
-        inReplyTo: inReplyTo || null,
-        purchaseId: purchaseId || null,
-        isRead: true,
-      });
+      try {
+        const info = await transporter.sendMail(mailOptions);
+        this.logger.log(`SMTP sent via port ${port}, messageId=${info.messageId}`);
 
-      return this.emailMessageRepository.save(message);
-    } catch (error: any) {
-      this.logger.error(`SMTP send failed: ${error.message}`);
-      throw new BadRequestException(`Ошибка отправки: ${error.message}`);
+        const message = this.emailMessageRepository.create({
+          userId,
+          direction: 'sent',
+          contactEmail: to.toLowerCase(),
+          subject,
+          bodyText: body,
+          messageId: info.messageId || null,
+          inReplyTo: inReplyTo || null,
+          purchaseId: purchaseId || null,
+          isRead: true,
+        });
+
+        return this.emailMessageRepository.save(message);
+      } catch (error: any) {
+        lastError = error;
+        this.logger.warn(`SMTP port ${port} failed: ${error.message}`);
+      }
+    }
+
+    this.logger.error(`SMTP all attempts failed for ${smtpHost}`);
+    throw new BadRequestException(`Ошибка отправки: ${lastError?.message}`);
     }
   }
 
