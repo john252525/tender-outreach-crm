@@ -121,7 +121,6 @@ export class EmailsService {
 
     this.logger.error(`SMTP all attempts failed for ${smtpHost}`);
     throw new BadRequestException(`Ошибка отправки: ${lastError?.message}`);
-    }
   }
 
   // --- Fetch inbox via IMAP (using simple fetch approach) ---
