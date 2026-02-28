@@ -44,9 +44,10 @@ export class ProzorroService {
 
     const results: ProzorroTender[] = [];
     let scannedCount = 0;
-    let nextUrl =
+    const initialUrl =
       `${PROZORRO_API}/tenders?descending=1&limit=100` +
       `&opt_fields=title,status,value,procuringEntity,tenderPeriod,procurementMethodType`;
+    let nextUrl = initialUrl;
 
     for (let page = 0; page < maxPages && results.length < limit; page++) {
       this.logger.log(`[search] page=${page} fetching: ${nextUrl}`);
@@ -90,7 +91,7 @@ export class ProzorroService {
     }
 
     this.logger.log(`[search] done: found=${results.length}, scanned=${scannedCount}, query="${query}", status="${statusFilter}"`);
-    return { results, scannedCount };
+    return { results, scannedCount, debugUrl: initialUrl };
   }
 
   private async upsertTenderFromFeed(item: any): Promise<ProzorroTender> {

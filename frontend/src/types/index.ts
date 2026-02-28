@@ -321,6 +321,7 @@ export interface ProzorroTenderDoc {
 export interface ProzorroSearchResponse {
   results: ProzorroTender[];
   scannedCount: number;
+  debugUrl?: string;
 }
 
 export interface ProzorroOutreachItem {

@@ -64,6 +64,7 @@ export default function ProzorroPage() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
   const [scannedCount, setScannedCount] = useState(0);
+  const [debugUrl, setDebugUrl] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [preparingId, setPreparingId] = useState<string | null>(null);
 
@@ -89,6 +90,7 @@ export default function ProzorroPage() {
         const data = await api.get<ProzorroSearchResponse>(`/prozorro/search?${params.toString()}`);
         setResults(data.results);
         setScannedCount(data.scannedCount);
+        setDebugUrl(data.debugUrl || '');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка поиска');
         setResults([]);
@@ -191,7 +193,15 @@ export default function ProzorroPage() {
 
         {searched && !loading && (
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            Найдено: {results.length} {scannedCount > 0 && `(просканировано ${scannedCount} тендеров)`}
+            <div>Найдено: {results.length} {scannedCount > 0 && `(просканировано ${scannedCount} тендеров)`}</div>
+            {debugUrl && (
+              <div className="mt-1 font-mono text-xs break-all">
+                API URL:{' '}
+                <a href={debugUrl} target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline">
+                  {debugUrl}
+                </a>
+              </div>
+            )}
           </div>
         )}
 
