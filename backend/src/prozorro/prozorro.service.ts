@@ -44,9 +44,12 @@ export class ProzorroService {
 
     const results: ProzorroTender[] = [];
     let scannedCount = 0;
+
+    // Prozorro feed does NOT return title/value in opt_fields,
+    // so we collect IDs from feed, then batch-fetch details in parallel.
     const initialUrl =
       `${PROZORRO_API}/tenders?descending=1&limit=100` +
-      `&opt_fields=title,status,value,procuringEntity,tenderPeriod,procurementMethodType`;
+      `&opt_fields=status,procurementMethodType`;
     let nextUrl = initialUrl;
 
     for (let page = 0; page < maxPages && results.length < limit; page++) {
@@ -66,22 +69,39 @@ export class ProzorroService {
         break;
       }
 
-      this.logger.log(`[search] page=${page} got ${data?.data?.length ?? 0} items, next_page=${data?.next_page?.uri ?? 'none'}`);
+      this.logger.log(`[search] page=${page} got ${data?.data?.length ?? 0} items`);
       if (!data?.data?.length) break;
+
+      // Pre-filter by status from feed (status IS available in feed)
+      let candidates = data.data;
+      if (statusFilter) {
+        candidates = candidates.filter((item: any) => item.status === statusFilter);
+      }
       scannedCount += data.data.length;
 
-      for (const item of data.data) {
-        if (results.length >= limit) break;
+      // Batch-fetch details (5 at a time) to get title, value, etc.
+      const needed = limit - results.length;
+      const batch = candidates.slice(0, query ? candidates.length : needed);
 
-        const title = (item.title || '').toLowerCase();
-        if (query && !title.includes(query)) continue;
-        if (statusFilter && item.status !== statusFilter) continue;
+      const CONCURRENCY = 5;
+      for (let i = 0; i < batch.length && results.length < limit; i += CONCURRENCY) {
+        const chunk = batch.slice(i, i + CONCURRENCY);
+        const fetched = await Promise.allSettled(
+          chunk.map((item: any) => this.getOrFetchTender(item.id)),
+        );
 
-        try {
-          const tender = await this.upsertTenderFromFeed(item);
+        for (const result of fetched) {
+          if (results.length >= limit) break;
+          if (result.status !== 'fulfilled' || !result.value) continue;
+          const tender = result.value;
+
+          // If user entered a query, filter by title
+          if (query) {
+            const title = (tender.title || '').toLowerCase();
+            if (!title.includes(query)) continue;
+          }
+
           results.push(tender);
-        } catch (error: any) {
-          this.logger.error(`Failed to upsert tender ${item.id}: ${error.message}`);
         }
       }
 
@@ -90,36 +110,20 @@ export class ProzorroService {
       nextUrl = nextUri;
     }
 
-    this.logger.log(`[search] done: found=${results.length}, scanned=${scannedCount}, query="${query}", status="${statusFilter}"`);
+    this.logger.log(`[search] done: found=${results.length}, scanned=${scannedCount}`);
     return { results, scannedCount, debugUrl: initialUrl };
   }
 
-  private async upsertTenderFromFeed(item: any): Promise<ProzorroTender> {
-    const prozorroId = item.id;
-    let tender = await this.tenderRepo.findOne({ where: { prozorroId } });
-
-    const fields = {
-      prozorroId,
-      tenderNumber: item.tenderID || prozorroId,
-      title: item.title || '',
-      status: item.status || null,
-      amount: item.value?.amount ?? null,
-      currency: item.value?.currency ?? null,
-      procuringEntityName: item.procuringEntity?.name || null,
-      procuringEntityId: item.procuringEntity?.identifier?.id || null,
-      procurementMethodType: item.procurementMethodType || null,
-      tenderPeriodEnd: item.tenderPeriod?.endDate
-        ? new Date(item.tenderPeriod.endDate)
-        : null,
-    };
-
-    if (tender) {
-      Object.assign(tender, fields);
-      return this.tenderRepo.save(tender);
+  /**
+   * Get tender from DB cache or fetch from Prozorro API.
+   * Avoids re-fetching tenders we already have details for.
+   */
+  private async getOrFetchTender(prozorroId: string): Promise<ProzorroTender> {
+    const existing = await this.tenderRepo.findOne({ where: { prozorroId } });
+    if (existing && existing.detailFetchedAt) {
+      return existing;
     }
-
-    tender = this.tenderRepo.create(fields);
-    return this.tenderRepo.save(tender);
+    return this.fetchAndStoreTenderDetail(prozorroId, existing);
   }
 
   // ─── Get tender details ────────────────────────────────────
