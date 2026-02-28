@@ -213,7 +213,7 @@ export class ProzorroService {
     return this.tenderRepo.findOne({
       where: { id: tender.id },
       relations: ['docs'],
-    });
+    }) as Promise<ProzorroTender>;
   }
 
   // ─── Parse document text ───────────────────────────────────
