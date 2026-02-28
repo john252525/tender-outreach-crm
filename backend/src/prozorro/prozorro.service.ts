@@ -49,6 +49,7 @@ export class ProzorroService {
       `&opt_fields=title,status,value,procuringEntity,tenderPeriod,procurementMethodType`;
 
     for (let page = 0; page < maxPages && results.length < limit; page++) {
+      this.logger.log(`[search] page=${page} fetching: ${nextUrl}`);
       let data: any;
       try {
         const response = await fetch(nextUrl, {
@@ -64,6 +65,7 @@ export class ProzorroService {
         break;
       }
 
+      this.logger.log(`[search] page=${page} got ${data?.data?.length ?? 0} items, next_page=${data?.next_page?.uri ?? 'none'}`);
       if (!data?.data?.length) break;
       scannedCount += data.data.length;
 
@@ -87,6 +89,7 @@ export class ProzorroService {
       nextUrl = nextUri;
     }
 
+    this.logger.log(`[search] done: found=${results.length}, scanned=${scannedCount}, query="${query}", status="${statusFilter}"`);
     return { results, scannedCount };
   }
 
