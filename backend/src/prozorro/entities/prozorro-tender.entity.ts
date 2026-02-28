@@ -24,22 +24,22 @@ export class ProzorroTender {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   status: string | null;
 
   @Column({ type: 'decimal', nullable: true })
   amount: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   currency: string | null;
 
-  @Column({ nullable: true, name: 'procuring_entity_name' })
+  @Column({ type: 'varchar', nullable: true, name: 'procuring_entity_name' })
   procuringEntityName: string | null;
 
-  @Column({ nullable: true, name: 'procuring_entity_id' })
+  @Column({ type: 'varchar', nullable: true, name: 'procuring_entity_id' })
   procuringEntityId: string | null;
 
-  @Column({ nullable: true, name: 'procurement_method_type' })
+  @Column({ type: 'varchar', nullable: true, name: 'procurement_method_type' })
   procurementMethodType: string | null;
 
   @Column({ type: 'jsonb', nullable: true, name: 'raw_data' })

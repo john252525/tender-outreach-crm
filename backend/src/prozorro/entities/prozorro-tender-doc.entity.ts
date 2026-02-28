@@ -26,13 +26,13 @@ export class ProzorroTenderDoc {
   @Column({ type: 'text' })
   title: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   format: string | null;
 
   @Column({ type: 'text' })
   url: string;
 
-  @Column({ nullable: true, name: 'document_type' })
+  @Column({ type: 'varchar', nullable: true, name: 'document_type' })
   documentType: string | null;
 
   @Column({ type: 'text', nullable: true, name: 'parsed_text' })
