@@ -36,7 +36,7 @@ export class ProzorroService {
 
   async search(
     dto: SearchProzorroDto,
-  ): Promise<{ results: ProzorroTender[]; scannedCount: number }> {
+  ): Promise<{ results: ProzorroTender[]; scannedCount: number; debugUrl: string }> {
     const limit = dto.limit || 20;
     const maxPages = dto.maxPages || 10;
     const query = (dto.query || '').trim().toLowerCase();
