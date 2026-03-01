@@ -11,10 +11,10 @@ import {
   ChevronUp,
   ExternalLink,
   Loader2,
-  Sparkles,
   Send,
 } from 'lucide-react';
 import Link from 'next/link';
+import ProzorroMagicButton from '@/components/prozorro-magic-button';
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Все статусы' },
@@ -66,7 +66,6 @@ export default function ProzorroPage() {
   const [scannedCount, setScannedCount] = useState(0);
   const [debugUrl, setDebugUrl] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [preparingId, setPreparingId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     query: '',
@@ -100,19 +99,6 @@ export default function ProzorroPage() {
     },
     [form],
   );
-
-  const handlePrepare = useCallback(async (tenderId: string) => {
-    if (preparingId) return;
-    setPreparingId(tenderId);
-    try {
-      await api.post(`/prozorro/tender/${tenderId}/prepare`, {});
-      alert('AI-анализ завершён');
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Ошибка AI-анализа');
-    } finally {
-      setPreparingId(null);
-    }
-  }, [preparingId]);
 
   if (!user) return null;
 
@@ -250,18 +236,10 @@ export default function ProzorroPage() {
                     >
                       <ExternalLink size={12} /> Prozorro
                     </a>
-                    <button
-                      onClick={() => handlePrepare(tender.id)}
-                      disabled={preparingId === tender.id}
-                      className="btn-primary !py-1 !px-2 text-xs flex items-center gap-1"
-                    >
-                      {preparingId === tender.id ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Sparkles size={12} />
-                      )}
-                      AI
-                    </button>
+                    <ProzorroMagicButton
+                      tenderId={tender.id}
+                      prozorroId={tender.prozorroId}
+                    />
                   </div>
                 </div>
               </div>

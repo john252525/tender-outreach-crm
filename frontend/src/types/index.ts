@@ -349,3 +349,22 @@ export interface ProzorroPreparedLetter {
   tender: { id: string; tenderNumber: string; title: string } | null;
   emails: string[];
 }
+
+export interface ProzorroAiResult {
+  id: string;
+  userId: string;
+  tenderId: string;
+  searchQuery: string | null;
+  subject: string | null;
+  body: string | null;
+  createdAt: string;
+}
+
+export interface ProzorroWebResult {
+  id: string;
+  url: string;
+  title: string;
+  snippet: string;
+  favicon: string;
+  parsedEmails: string[];
+}
