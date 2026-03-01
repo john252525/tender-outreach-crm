@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { api } from '@/lib/api';
 import { ProzorroPipelineDetail } from '@/types';
 import {
@@ -18,6 +18,10 @@ import {
 
 type StageKey = 'docs' | 'ai' | 'sites' | 'emails' | 'letters';
 
+export interface ProzorroPipelineStatusHandle {
+  refresh: () => void;
+}
+
 interface Props {
   tenderId: string;
 }
@@ -30,143 +34,166 @@ const STAGE_CONFIG: { key: StageKey; icon: typeof FileText; label: string }[] = 
   { key: 'letters', icon: Mail, label: 'Листи' },
 ];
 
-export default function ProzorroPipelineStatus({ tenderId }: Props) {
-  const [openStage, setOpenStage] = useState<StageKey | null>(null);
-  const [detail, setDetail] = useState<ProzorroPipelineDetail | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+const ProzorroPipelineStatus = forwardRef<ProzorroPipelineStatusHandle, Props>(
+  function ProzorroPipelineStatus({ tenderId }, ref) {
+    const [openStage, setOpenStage] = useState<StageKey | null>(null);
+    const [detail, setDetail] = useState<ProzorroPipelineDetail | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const openModal = useCallback(async (stage: StageKey) => {
-    setOpenStage(stage);
-    setLoadingDetail(true);
-    try {
-      const data = await api.get<ProzorroPipelineDetail>(`/prozorro/tender/${tenderId}/pipeline`);
-      setDetail(data);
-    } catch {
-      // ignore
-    } finally {
-      setLoadingDetail(false);
+    const fetchDetail = useCallback(async () => {
+      try {
+        const data = await api.get<ProzorroPipelineDetail>(`/prozorro/tender/${tenderId}/pipeline`);
+        setDetail(data);
+      } catch {
+        // ignore
+      }
+    }, [tenderId]);
+
+    // Load pipeline data on mount
+    useEffect(() => {
+      fetchDetail();
+    }, [fetchDetail]);
+
+    // Expose refresh method to parent (Magic button calls this after completion)
+    useImperativeHandle(ref, () => ({
+      refresh: fetchDetail,
+    }), [fetchDetail]);
+
+    const openModal = useCallback(async (stage: StageKey) => {
+      setOpenStage(stage);
+      setLoadingDetail(true);
+      try {
+        const data = await api.get<ProzorroPipelineDetail>(`/prozorro/tender/${tenderId}/pipeline`);
+        setDetail(data);
+      } catch {
+        // ignore
+      } finally {
+        setLoadingDetail(false);
+      }
+    }, [tenderId]);
+
+    const closeModal = useCallback(() => {
+      setOpenStage(null);
+      // Don't clear detail — keep buttons green
+    }, []);
+
+    function getBadgeText(stage: StageKey): string {
+      if (!detail) return '—';
+      switch (stage) {
+        case 'docs':
+          return detail.docs.total > 0 ? `${detail.docs.parsed}/${detail.docs.total}` : '0';
+        case 'ai':
+          return detail.ai.done ? 'OK' : '—';
+        case 'sites':
+          return detail.sites.count > 0 ? String(detail.sites.count) : '—';
+        case 'emails':
+          return detail.emails.count > 0 ? String(detail.emails.count) : '—';
+        case 'letters':
+          return detail.letters.ready ? String(detail.letters.emailsCount) : '—';
+        default:
+          return '—';
+      }
     }
-  }, [tenderId]);
 
-  const closeModal = useCallback(() => {
-    setOpenStage(null);
-    setDetail(null);
-  }, []);
-
-  function getBadgeText(stage: StageKey): string {
-    if (!detail) return '—';
-    switch (stage) {
-      case 'docs':
-        return detail.docs.total > 0 ? `${detail.docs.parsed}/${detail.docs.total}` : '0';
-      case 'ai':
-        return detail.ai.done ? 'OK' : '—';
-      case 'sites':
-        return detail.sites.count > 0 ? String(detail.sites.count) : '—';
-      case 'emails':
-        return detail.emails.count > 0 ? String(detail.emails.count) : '—';
-      case 'letters':
-        return detail.letters.ready ? String(detail.letters.emailsCount) : '—';
-      default:
-        return '—';
+    function isStageComplete(stage: StageKey): boolean {
+      if (!detail) return false;
+      switch (stage) {
+        case 'docs':
+          return detail.docs.total > 0 && detail.docs.parsed > 0;
+        case 'ai':
+          return detail.ai.done;
+        case 'sites':
+          return detail.sites.count > 0;
+        case 'emails':
+          return detail.emails.count > 0;
+        case 'letters':
+          return detail.letters.ready;
+        default:
+          return false;
+      }
     }
-  }
 
-  function isStageComplete(stage: StageKey): boolean {
-    if (!detail) return false;
-    switch (stage) {
-      case 'docs':
-        return detail.docs.total > 0 && detail.docs.parsed > 0;
-      case 'ai':
-        return detail.ai.done;
-      case 'sites':
-        return detail.sites.count > 0;
-      case 'emails':
-        return detail.emails.count > 0;
-      case 'letters':
-        return detail.letters.ready;
-      default:
-        return false;
-    }
-  }
-
-  return (
-    <>
-      <div className="flex items-center gap-1">
-        {STAGE_CONFIG.map(({ key, icon: Icon, label }) => {
-          const complete = isStageComplete(key);
-          const text = getBadgeText(key);
-          return (
-            <button
-              key={key}
-              onClick={() => openModal(key)}
-              title={label}
-              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
-                complete
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
-                  : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Icon size={10} />
-              {text}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Modal */}
-      {openStage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                {STAGE_CONFIG.map(({ key, icon: Icon, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => openModal(key)}
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                      openStage === key
-                        ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                        : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    <Icon size={12} />
-                    {label}
-                  </button>
-                ))}
-              </div>
+    return (
+      <>
+        <div className="flex items-center gap-1">
+          {STAGE_CONFIG.map(({ key, icon: Icon, label }) => {
+            const complete = isStageComplete(key);
+            const text = getBadgeText(key);
+            return (
               <button
-                onClick={closeModal}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                key={key}
+                onClick={() => openModal(key)}
+                title={label}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                  complete
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                    : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
               >
-                <X size={18} />
+                <Icon size={10} />
+                {text}
               </button>
-            </div>
+            );
+          })}
+        </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-              {loadingDetail ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 size={24} className="animate-spin text-primary-600" />
+        {/* Modal */}
+        {openStage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={closeModal}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                  {STAGE_CONFIG.map(({ key, icon: Icon, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => openModal(key)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                        openStage === key
+                          ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
+                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      <Icon size={12} />
+                      {label}
+                    </button>
+                  ))}
                 </div>
-              ) : detail ? (
-                <ModalContent stage={openStage} detail={detail} />
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-                  Не вдалося завантажити дані
-                </p>
-              )}
+                <button
+                  onClick={closeModal}
+                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5">
+                {loadingDetail ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 size={24} className="animate-spin text-primary-600" />
+                  </div>
+                ) : detail ? (
+                  <ModalContent stage={openStage} detail={detail} />
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                    Не вдалося завантажити дані
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </>
-  );
-}
+        )}
+      </>
+    );
+  }
+);
+
+export default ProzorroPipelineStatus;
 
 function ModalContent({ stage, detail }: { stage: StageKey; detail: ProzorroPipelineDetail }) {
   switch (stage) {

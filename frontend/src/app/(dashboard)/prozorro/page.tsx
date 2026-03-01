@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import ProzorroMagicButton from '@/components/prozorro-magic-button';
-import ProzorroPipelineStatus from '@/components/prozorro-pipeline-status';
+import ProzorroPipelineStatus, { ProzorroPipelineStatusHandle } from '@/components/prozorro-pipeline-status';
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'Все статусы' },
@@ -55,6 +55,72 @@ function statusBadge(status: string | null) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${s.bg} ${s.text}`}>
       {s.label}
     </span>
+  );
+}
+
+function TenderCard({ tender }: { tender: ProzorroTender }) {
+  const pipelineRef = useRef<ProzorroPipelineStatusHandle>(null);
+
+  const handleMagicComplete = useCallback(() => {
+    pipelineRef.current?.refresh();
+  }, []);
+
+  return (
+    <div className="card hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Link
+              href={`/prozorro/${tender.prozorroId}`}
+              className="text-sm font-mono text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              {tender.tenderNumber}
+            </Link>
+            {statusBadge(tender.status)}
+            {tender.procurementMethodType && (
+              <span className="text-xs text-gray-400">{tender.procurementMethodType}</span>
+            )}
+          </div>
+          <Link
+            href={`/prozorro/${tender.prozorroId}`}
+            className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 line-clamp-2"
+          >
+            {tender.title}
+          </Link>
+          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+            {tender.procuringEntityName && (
+              <span>Замовник: {tender.procuringEntityName}</span>
+            )}
+            {tender.tenderPeriodEnd && (
+              <span>До: {formatDate(tender.tenderPeriodEnd)}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {formatPrice(tender.amount, tender.currency)}
+          </div>
+          <div className="flex gap-1">
+            <a
+              href={`https://prozorro.gov.ua/tender/${tender.tenderNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary !py-1 !px-2 text-xs flex items-center gap-1"
+            >
+              <ExternalLink size={12} /> Prozorro
+            </a>
+            <ProzorroMagicButton
+              tenderId={tender.id}
+              prozorroId={tender.prozorroId}
+              onComplete={handleMagicComplete}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+        <ProzorroPipelineStatus ref={pipelineRef} tenderId={tender.id} />
+      </div>
+    </div>
   );
 }
 
@@ -194,60 +260,7 @@ export default function ProzorroPage() {
 
         <div className="space-y-3">
           {results.map((tender) => (
-            <div key={tender.id} className="card hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Link
-                      href={`/prozorro/${tender.prozorroId}`}
-                      className="text-sm font-mono text-primary-600 dark:text-primary-400 hover:underline"
-                    >
-                      {tender.tenderNumber}
-                    </Link>
-                    {statusBadge(tender.status)}
-                    {tender.procurementMethodType && (
-                      <span className="text-xs text-gray-400">{tender.procurementMethodType}</span>
-                    )}
-                  </div>
-                  <Link
-                    href={`/prozorro/${tender.prozorroId}`}
-                    className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 line-clamp-2"
-                  >
-                    {tender.title}
-                  </Link>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {tender.procuringEntityName && (
-                      <span>Замовник: {tender.procuringEntityName}</span>
-                    )}
-                    {tender.tenderPeriodEnd && (
-                      <span>До: {formatDate(tender.tenderPeriodEnd)}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {formatPrice(tender.amount, tender.currency)}
-                  </div>
-                  <div className="flex gap-1">
-                    <a
-                      href={`https://prozorro.gov.ua/tender/${tender.tenderNumber}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-secondary !py-1 !px-2 text-xs flex items-center gap-1"
-                    >
-                      <ExternalLink size={12} /> Prozorro
-                    </a>
-                    <ProzorroMagicButton
-                      tenderId={tender.id}
-                      prozorroId={tender.prozorroId}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                <ProzorroPipelineStatus tenderId={tender.id} />
-              </div>
-            </div>
+            <TenderCard key={tender.id} tender={tender} />
           ))}
         </div>
 
