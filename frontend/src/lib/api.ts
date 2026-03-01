@@ -45,7 +45,9 @@ class ApiClient {
           const msg = typeof error.message === 'string' ? error.message : 'Ошибка запроса';
           throw new Error(msg);
         }
-        return retryResponse.json();
+        const retryText = await retryResponse.text();
+        if (!retryText) return {} as T;
+        return JSON.parse(retryText);
       }
 
       Cookies.remove('accessToken');
@@ -62,7 +64,9 @@ class ApiClient {
       throw new Error(msg);
     }
 
-    return response.json();
+    const text = await response.text();
+    if (!text) return {} as T;
+    return JSON.parse(text);
   }
 
   private async tryRefreshToken(): Promise<boolean> {
