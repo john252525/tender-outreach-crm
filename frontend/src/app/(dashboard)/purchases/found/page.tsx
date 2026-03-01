@@ -14,6 +14,7 @@ import {
   Star,
   Sparkles,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import MagicButtonCompact from '@/components/magic-button-compact';
@@ -86,6 +87,17 @@ export default function FoundPurchasesPage() {
       setPreparingId(null);
     }
   }, [preparingId, fetchData]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Удалить найденную закупку?')) return;
+    try {
+      await api.delete(`/purchases/found/${id}`);
+      setData((prev) => prev.filter((item) => item.id !== id));
+      setTotal((prev) => prev - 1);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const toggleFavorite = useCallback(async (purchaseId: string) => {
     try {
@@ -229,6 +241,13 @@ export default function FoundPurchasesPage() {
                         >
                           Подробнее <ExternalLink size={12} />
                         </Link>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                          title="Удалить"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
                   </div>

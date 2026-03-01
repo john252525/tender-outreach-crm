@@ -208,6 +208,54 @@ export class PurchasesController {
     return this.purchasesService.removeFromBlacklist(user.id, email);
   }
 
+  @Delete('found/:id')
+  deleteFoundPurchase(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.deleteFoundPurchase(id, user.id);
+  }
+
+  @Delete('search-queries/:id')
+  deleteSearchQuery(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.deleteSearchQuery(id, user.id);
+  }
+
+  @Delete('history/:id')
+  deleteHistory(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.deleteHistory(id, user.id);
+  }
+
+  @Delete('ai-results/:id')
+  deleteAiResult(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.deleteAiResult(id, user.id);
+  }
+
+  @Delete('ai-search-terms/:id')
+  deleteSearchTerm(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.deleteSearchTerm(id, user.id);
+  }
+
+  @Delete('web-search-results/:id')
+  deleteWebSearchResult(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.deleteWebSearchResult(id, user.id);
+  }
+
   @Get(':purchaseNumber')
   async getById(@Param('purchaseNumber') purchaseNumber: string) {
     const purchase = await this.purchasesService.getById(purchaseNumber);

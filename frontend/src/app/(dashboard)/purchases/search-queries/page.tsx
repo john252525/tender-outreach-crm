@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
 import { SearchQueryRecord, PaginatedResponse } from '@/types';
-import { History, ChevronLeft, ChevronRight, ArrowLeft, Search } from 'lucide-react';
+import { History, ChevronLeft, ChevronRight, ArrowLeft, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 function formatDateTime(dateStr: string): string {
@@ -57,6 +57,17 @@ export default function SearchQueriesPage() {
     fetchData();
   }, [fetchData]);
 
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Удалить поисковый запрос?')) return;
+    try {
+      await api.delete(`/purchases/search-queries/${id}`);
+      setData((prev) => prev.filter((item) => item.id !== id));
+      setTotal((prev) => prev - 1);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const totalPages = Math.ceil(total / limit);
 
   if (!user) return null;
@@ -104,10 +115,17 @@ export default function SearchQueriesPage() {
                         {formatDateTime(query.createdAt)}
                       </p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
                         {query.resultsCount} результатов
                       </span>
+                      <button
+                        onClick={() => handleDelete(query.id)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                        title="Удалить"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>

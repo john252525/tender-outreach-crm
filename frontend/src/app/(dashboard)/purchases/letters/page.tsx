@@ -19,6 +19,7 @@ import {
   Send,
   Loader2,
   Check,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -51,6 +52,17 @@ export default function LettersPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Удалить письмо?')) return;
+    try {
+      await api.delete(`/purchases/ai-results/${id}`);
+      setData((prev) => prev.filter((item) => item.id !== id));
+      setTotal((prev) => prev - 1);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleSendLetter = async (item: PreparedLetter) => {
     if (!item.emails.length || !item.body || sendingId) return;
@@ -170,6 +182,16 @@ export default function LettersPage() {
                           {item.emails.length} адр.
                         </span>
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item.id);
+                        }}
+                        className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors"
+                        title="Удалить"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                       <div className="text-gray-400">
                         {expandedId === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>

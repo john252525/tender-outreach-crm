@@ -12,6 +12,7 @@ import {
   Search,
   Clock,
   ExternalLink,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -61,6 +62,17 @@ export default function PurchaseHistoryPage() {
     fetchHistory();
   }, [fetchHistory]);
 
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm('Удалить запись из истории?')) return;
+    try {
+      await api.delete(`/purchases/history/${id}`);
+      setHistory((prev) => prev.filter((item) => item.id !== id));
+      setTotal((prev) => prev - 1);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   if (!user) return null;
 
   const totalPages = Math.ceil(total / limit);
@@ -104,12 +116,13 @@ export default function PurchaseHistoryPage() {
                   <th className="text-right px-6 py-3 font-medium text-gray-500 dark:text-gray-400">
                     Дата просмотра
                   </th>
+                  <th className="px-6 py-3 w-12"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
                       </div>
@@ -117,7 +130,7 @@ export default function PurchaseHistoryPage() {
                   </tr>
                 ) : history.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center">
+                    <td colSpan={6} className="px-6 py-12 text-center">
                       <Clock size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
                       <p className="text-gray-400">История просмотров пуста</p>
                       <Link
@@ -164,6 +177,15 @@ export default function PurchaseHistoryPage() {
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap text-gray-500 dark:text-gray-400 text-xs">
                         {formatDateTime(item.foundAt)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors"
+                          title="Удалить"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))

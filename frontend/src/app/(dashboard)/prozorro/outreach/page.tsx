@@ -19,6 +19,7 @@ import {
   X,
   ArrowLeft,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -103,6 +104,26 @@ export default function ProzorroOutreachPage() {
     }
   }, [fetchData]);
 
+  const handleDeleteAiResult = useCallback(async (id: string) => {
+    if (!confirm('Удалить AI-результат?')) return;
+    try {
+      await api.delete(`/prozorro/ai-results/${id}`);
+      await fetchData();
+    } catch {
+      // ignore
+    }
+  }, [fetchData]);
+
+  const handleDeleteWebResult = useCallback(async (id: string) => {
+    if (!confirm('Удалить результат поиска?')) return;
+    try {
+      await api.delete(`/prozorro/web-results/${id}`);
+      await fetchData();
+    } catch {
+      // ignore
+    }
+  }, [fetchData]);
+
   const handleUnban = useCallback(async (email: string) => {
     try {
       await api.delete(`/prozorro/blacklist/${encodeURIComponent(email)}`);
@@ -180,6 +201,13 @@ export default function ProzorroOutreachPage() {
                           <p className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 line-clamp-1">{item.tender.title}</p>
                         )}
                       </div>
+                      <button
+                        onClick={() => handleDeleteAiResult(item.id)}
+                        className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors"
+                        title="Удалить"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                       <button
                         onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                         className="btn-secondary !py-1 !px-2 text-xs"
@@ -260,6 +288,13 @@ export default function ProzorroOutreachPage() {
                                         <Mail size={10} />
                                       )}
                                       Email
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteWebResult(wr.id)}
+                                      className="p-0.5 rounded text-gray-400 hover:text-red-500 transition-colors"
+                                      title="Удалить"
+                                    >
+                                      <Trash2 size={12} />
                                     </button>
                                   </div>
                                   {wr.parsedEmails.length > 0 && (

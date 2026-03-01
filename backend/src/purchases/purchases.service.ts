@@ -1283,4 +1283,37 @@ export class PurchasesService {
 
     return result;
   }
+
+  // --- Delete operations ---
+
+  async deleteFoundPurchase(id: string, userId: string): Promise<void> {
+    await this.foundPurchaseRepository.delete({ id, userId });
+  }
+
+  async deleteSearchQuery(id: string, userId: string): Promise<void> {
+    await this.searchQueryRepository.delete({ id, userId });
+  }
+
+  async deleteHistory(id: string, userId: string): Promise<void> {
+    await this.historyRepository.delete({ id, userId });
+  }
+
+  async deleteAiResult(id: string, userId: string): Promise<void> {
+    await this.aiResultRepository.delete({ id, userId });
+  }
+
+  async deleteSearchTerm(id: string, userId: string): Promise<void> {
+    // Remove junction records first
+    await this.aiSearchTermPurchaseRepository.delete({ searchTermId: id, userId });
+    await this.webSearchResultSearchTermRepository.delete({ searchTermId: id });
+    await this.aiSearchTermRepository.delete({ id });
+  }
+
+  async deleteWebSearchResult(id: string, userId: string): Promise<void> {
+    const result = await this.webSearchResultRepository.findOne({ where: { id, userId } });
+    if (!result) return;
+    await this.webSearchResultEmailRepository.delete({ webSearchResultId: id });
+    await this.webSearchResultSearchTermRepository.delete({ webSearchResultId: id });
+    await this.webSearchResultRepository.delete({ id });
+  }
 }

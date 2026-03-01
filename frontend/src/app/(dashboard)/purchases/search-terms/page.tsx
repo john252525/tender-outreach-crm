@@ -17,6 +17,7 @@ import {
   AtSign,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -67,6 +68,32 @@ export default function SearchTermsPage() {
 
   const toggleExpand = useCallback((termId: string) => {
     setExpandedId((prev) => (prev === termId ? null : termId));
+  }, []);
+
+  const handleDeleteTerm = useCallback(async (id: string) => {
+    if (!confirm('Удалить поисковый запрос AI?')) return;
+    try {
+      await api.delete(`/purchases/ai-search-terms/${id}`);
+      setTerms((prev) => prev.filter((t) => t.id !== id));
+      setTotal((prev) => prev - 1);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleDeleteWebResult = useCallback(async (resultId: string, termId: string) => {
+    if (!confirm('Удалить результат поиска?')) return;
+    try {
+      await api.delete(`/purchases/web-search-results/${resultId}`);
+      setTerms((prev) =>
+        prev.map((t) => {
+          if (t.id !== termId || !t.sites) return t;
+          return { ...t, sites: t.sites.filter((s) => s.id !== resultId) };
+        }),
+      );
+    } catch {
+      // ignore
+    }
   }, []);
 
   const handleParseEmails = useCallback(async (resultId: string, termId: string) => {
@@ -159,6 +186,13 @@ export default function SearchTermsPage() {
                       )}
                       {searchingId === term.id ? 'Поиск...' : 'Искать'}
                     </button>
+                    <button
+                      onClick={() => handleDeleteTerm(term.id)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                      title="Удалить"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
 
                   {/* Linked purchases */}
@@ -218,6 +252,13 @@ export default function SearchTermsPage() {
                                   <AtSign size={12} />
                                 )}
                                 Email
+                              </button>
+                              <button
+                                onClick={() => handleDeleteWebResult(result.id, term.id)}
+                                className="p-1 rounded text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                                title="Удалить"
+                              >
+                                <Trash2 size={14} />
                               </button>
                             </div>
 

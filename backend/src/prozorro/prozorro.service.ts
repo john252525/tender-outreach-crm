@@ -704,4 +704,22 @@ export class ProzorroService {
       },
     };
   }
+
+  // ─── Delete operations ──────────────────────────────────
+
+  async deleteTender(id: string): Promise<void> {
+    await this.aiResultRepo.delete({ tenderId: id });
+    await this.docRepo.delete({ tenderId: id });
+    await this.tenderRepo.delete({ id });
+  }
+
+  async deleteAiResult(id: string, userId: string): Promise<void> {
+    await this.aiResultRepo.delete({ id, userId });
+  }
+
+  async deleteWebResult(id: string, userId: string): Promise<void> {
+    const result = await this.webResultRepo.findOne({ where: { id, userId } });
+    if (!result) return;
+    await this.webResultRepo.delete({ id });
+  }
 }

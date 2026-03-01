@@ -110,4 +110,25 @@ export class ProzorroController {
   ) {
     return this.prozorroService.removeBlacklist(user.id, email);
   }
+
+  @Delete('tender/:id')
+  deleteTender(@Param('id') id: string) {
+    return this.prozorroService.deleteTender(id);
+  }
+
+  @Delete('ai-results/:id')
+  deleteAiResult(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.prozorroService.deleteAiResult(id, user.id);
+  }
+
+  @Delete('web-results/:id')
+  deleteWebResult(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.prozorroService.deleteWebResult(id, user.id);
+  }
 }
