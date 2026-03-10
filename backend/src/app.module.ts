@@ -7,6 +7,7 @@ import { PurchasesModule } from './purchases/purchases.module';
 import { ProzorroModule } from './prozorro/prozorro.module';
 import { TouchApiModule } from './touch-api/touch-api.module';
 import { EmailsModule } from './emails/emails.module';
+import { OutreachModule } from './outreach/outreach.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { EmailsModule } from './emails/emails.module';
     ProzorroModule,
     TouchApiModule,
     EmailsModule,
+    OutreachModule,
   ],
 })
 export class AppModule {}

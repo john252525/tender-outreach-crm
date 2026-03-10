@@ -397,3 +397,133 @@ export interface ProzorroPipelineDetail {
     emailsCount: number;
   };
 }
+
+// --- Outreach (Cold Email) ---
+
+export interface OutreachEmailAccount {
+  id: string;
+  userId: string;
+  email: string;
+  senderName: string | null;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  imapHost: string | null;
+  imapPort: number | null;
+  imapUser: string | null;
+  imapPass: string | null;
+  dailyLimit: number;
+  sentToday: number;
+  sentTodayDate: string | null;
+  isWarmupEnabled: boolean;
+  status: 'active' | 'paused' | 'error';
+  lastError: string | null;
+  signature: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OutreachLeadList {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  leadsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OutreachLead {
+  id: string;
+  userId: string;
+  leadListId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  company: string | null;
+  website: string | null;
+  position: string | null;
+  phone: string | null;
+  customFields: Record<string, string> | null;
+  status: 'active' | 'bounced' | 'unsubscribed' | 'invalid';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OutreachCampaign {
+  id: string;
+  userId: string;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'completed';
+  leadListId: string | null;
+  emailAccountIds: string[];
+  dailySendLimit: number;
+  sendFromHour: number;
+  sendToHour: number;
+  timezone: string;
+  trackOpens: boolean;
+  statsSent: number;
+  statsOpened: number;
+  statsReplied: number;
+  statsBounced: number;
+  createdAt: string;
+  updatedAt: string;
+  steps?: OutreachCampaignStep[];
+  campaignLeads?: OutreachCampaignLead[];
+}
+
+export interface OutreachCampaignStep {
+  id: string;
+  campaignId: string;
+  stepNumber: number;
+  subject: string | null;
+  body: string;
+  delayDays: number;
+  delayHours: number;
+  createdAt: string;
+}
+
+export interface OutreachCampaignLead {
+  id: string;
+  campaignId: string;
+  leadId: string;
+  currentStep: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'replied' | 'bounced' | 'unsubscribed';
+  nextSendAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lead?: OutreachLead;
+}
+
+export interface OutreachCampaignEmail {
+  id: string;
+  campaignId: string;
+  campaignStepId: string;
+  campaignLeadId: string;
+  leadId: string;
+  emailAccountId: string;
+  toEmail: string;
+  subject: string | null;
+  body: string;
+  status: 'scheduled' | 'sent' | 'opened' | 'replied' | 'bounced' | 'failed';
+  scheduledAt: string | null;
+  sentAt: string | null;
+  openedAt: string | null;
+  repliedAt: string | null;
+  errorMessage: string | null;
+  replyText: string | null;
+  createdAt: string;
+}
+
+export interface OutreachDashboardStats {
+  totalAccounts: number;
+  activeAccounts: number;
+  totalLeads: number;
+  totalCampaigns: number;
+  activeCampaigns: number;
+  totalSent: number;
+  totalOpened: number;
+  totalReplied: number;
+  totalBounced: number;
+}

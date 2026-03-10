@@ -33,6 +33,11 @@ import {
   Send,
   MessageCircle,
   Globe2,
+  Zap,
+  MailPlus,
+  UsersRound,
+  Megaphone as MegaphoneIcon,
+  Rocket,
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
@@ -128,6 +133,38 @@ const navItems: NavItem[] = [
         label: 'Воронка рассылки',
         href: '/prozorro/outreach',
         icon: <Send size={16} />,
+        roles: ALL_ROLES,
+      },
+    ],
+  },
+  {
+    label: 'Email Outreach',
+    href: '/outreach',
+    icon: <Rocket size={20} />,
+    roles: ALL_ROLES,
+    children: [
+      {
+        label: 'Почтовые аккаунты',
+        href: '/outreach/accounts',
+        icon: <MailPlus size={16} />,
+        roles: ALL_ROLES,
+      },
+      {
+        label: 'База лидов',
+        href: '/outreach/leads',
+        icon: <UsersRound size={16} />,
+        roles: ALL_ROLES,
+      },
+      {
+        label: 'Кампании',
+        href: '/outreach/campaigns',
+        icon: <Zap size={16} />,
+        roles: ALL_ROLES,
+      },
+      {
+        label: 'Входящие',
+        href: '/outreach/inbox',
+        icon: <Inbox size={16} />,
         roles: ALL_ROLES,
       },
     ],
