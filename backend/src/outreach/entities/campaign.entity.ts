@@ -15,10 +15,10 @@ export class OutreachCampaign {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'user_id' })
+  @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
   @Column({
@@ -28,7 +28,7 @@ export class OutreachCampaign {
   })
   status: 'draft' | 'active' | 'paused' | 'completed';
 
-  @Column({ name: 'lead_list_id', nullable: true })
+  @Column({ name: 'lead_list_id', type: 'uuid', nullable: true })
   leadListId: string | null;
 
   @Column({ name: 'daily_send_limit', type: 'int', default: 50 })
@@ -40,7 +40,7 @@ export class OutreachCampaign {
   @Column({ name: 'send_to_hour', type: 'int', default: 18 })
   sendToHour: number;
 
-  @Column({ default: 'Europe/Moscow' })
+  @Column({ type: 'varchar', default: 'Europe/Moscow' })
   timezone: string;
 
   @Column({ name: 'track_opens', default: false })

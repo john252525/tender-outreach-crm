@@ -15,10 +15,10 @@ export class OutreachCampaignLead {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'campaign_id' })
+  @Column({ name: 'campaign_id', type: 'uuid' })
   campaignId: string;
 
-  @Column({ name: 'lead_id' })
+  @Column({ name: 'lead_id', type: 'uuid' })
   leadId: string;
 
   @Column({ name: 'current_step', type: 'int', default: 0 })

@@ -13,13 +13,13 @@ export class OutreachCampaignStep {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'campaign_id' })
+  @Column({ name: 'campaign_id', type: 'uuid' })
   campaignId: string;
 
   @Column({ name: 'step_number', type: 'int' })
   stepNumber: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   subject: string | null;
 
   @Column({ type: 'text' })

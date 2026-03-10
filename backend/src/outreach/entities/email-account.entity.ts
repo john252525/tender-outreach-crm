@@ -11,37 +11,37 @@ export class OutreachEmailAccount {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'user_id' })
+  @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   email: string;
 
-  @Column({ name: 'sender_name', nullable: true })
+  @Column({ name: 'sender_name', type: 'varchar', nullable: true })
   senderName: string | null;
 
-  @Column({ name: 'smtp_host' })
+  @Column({ name: 'smtp_host', type: 'varchar' })
   smtpHost: string;
 
   @Column({ name: 'smtp_port', type: 'int', default: 587 })
   smtpPort: number;
 
-  @Column({ name: 'smtp_user' })
+  @Column({ name: 'smtp_user', type: 'varchar' })
   smtpUser: string;
 
-  @Column({ name: 'smtp_pass' })
+  @Column({ name: 'smtp_pass', type: 'varchar' })
   smtpPass: string;
 
-  @Column({ name: 'imap_host', nullable: true })
+  @Column({ name: 'imap_host', type: 'varchar', nullable: true })
   imapHost: string | null;
 
   @Column({ name: 'imap_port', type: 'int', nullable: true })
   imapPort: number | null;
 
-  @Column({ name: 'imap_user', nullable: true })
+  @Column({ name: 'imap_user', type: 'varchar', nullable: true })
   imapUser: string | null;
 
-  @Column({ name: 'imap_pass', nullable: true })
+  @Column({ name: 'imap_pass', type: 'varchar', nullable: true })
   imapPass: string | null;
 
   @Column({ name: 'daily_limit', type: 'int', default: 50 })
