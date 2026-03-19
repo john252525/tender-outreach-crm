@@ -530,6 +530,28 @@ export interface OutreachCampaignEmail {
   createdAt: string;
 }
 
+// --- Crypto Deals ---
+
+export interface CryptoSource {
+  id: string;
+  userId: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+  dealsCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CryptoDeal {
+  id: string;
+  sourceId: string;
+  payload: Record<string, unknown>;
+  senderIp: string | null;
+  source?: CryptoSource;
+  createdAt: string;
+}
+
 export interface OutreachDashboardStats {
   totalAccounts: number;
   activeAccounts: number;

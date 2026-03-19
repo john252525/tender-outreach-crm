@@ -10,6 +10,7 @@ import { EmailsModule } from './emails/emails.module';
 import { OutreachModule } from './outreach/outreach.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { CryptoDealsModule } from './crypto-deals/crypto-deals.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     OutreachModule,
     ApiKeysModule,
     DashboardModule,
+    CryptoDealsModule,
   ],
 })
 export class AppModule {}

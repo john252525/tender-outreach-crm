@@ -39,6 +39,7 @@ import {
   Megaphone as MegaphoneIcon,
   Rocket,
   Key,
+  Coins,
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
@@ -180,6 +181,12 @@ const navItems: NavItem[] = [
     label: 'Мессенджер',
     href: '/messenger',
     icon: <MessageCircle size={20} />,
+    roles: ALL_ROLES,
+  },
+  {
+    label: 'Криптосделки',
+    href: '/crypto-deals',
+    icon: <Coins size={20} />,
     roles: ALL_ROLES,
   },
   {
