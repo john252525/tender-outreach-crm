@@ -398,6 +398,19 @@ export interface ProzorroPipelineDetail {
   };
 }
 
+// --- API Keys ---
+
+export interface ApiKeyItem {
+  id: string;
+  name: string;
+  key?: string;
+  keyPrefix: string;
+  isActive: boolean;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
 // --- Outreach (Cold Email) ---
 
 export interface OutreachEmailAccount {

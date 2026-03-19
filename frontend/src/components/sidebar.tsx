@@ -38,6 +38,7 @@ import {
   UsersRound,
   Megaphone as MegaphoneIcon,
   Rocket,
+  Key,
 } from 'lucide-react';
 import { useState } from 'react';
 import SshSidebarSection from './ssh-sidebar-section';
@@ -179,6 +180,12 @@ const navItems: NavItem[] = [
     label: 'Мессенджер',
     href: '/messenger',
     icon: <MessageCircle size={20} />,
+    roles: ALL_ROLES,
+  },
+  {
+    label: 'API',
+    href: '/api',
+    icon: <Key size={20} />,
     roles: ALL_ROLES,
   },
   {

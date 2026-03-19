@@ -8,6 +8,7 @@ import { ProzorroModule } from './prozorro/prozorro.module';
 import { TouchApiModule } from './touch-api/touch-api.module';
 import { EmailsModule } from './emails/emails.module';
 import { OutreachModule } from './outreach/outreach.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     TouchApiModule,
     EmailsModule,
     OutreachModule,
+    ApiKeysModule,
     DashboardModule,
   ],
 })

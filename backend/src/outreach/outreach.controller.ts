@@ -13,14 +13,14 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { OutreachService } from './outreach.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JwtOrApiKeyAuthGuard } from '../common/guards/jwt-or-apikey-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 
 @ApiTags('Outreach')
 @ApiBearerAuth()
 @Controller('outreach')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtOrApiKeyAuthGuard)
 export class OutreachController {
   constructor(private readonly outreachService: OutreachService) {}
 
