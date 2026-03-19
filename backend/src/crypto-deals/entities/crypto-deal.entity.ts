@@ -19,7 +19,7 @@ export class CryptoDeal {
   @Column({ type: 'jsonb' })
   payload: Record<string, unknown>;
 
-  @Column({ name: 'sender_ip', nullable: true })
+  @Column({ name: 'sender_ip', type: 'varchar', nullable: true })
   senderIp: string | null;
 
   @ManyToOne(() => CryptoSource, (source) => source.deals, { onDelete: 'CASCADE' })
