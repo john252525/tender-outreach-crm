@@ -4,15 +4,14 @@ export class AddCryptoDealsTable1708000000031 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "crypto_sources" (
-        "id" uuid DEFAULT uuid_generate_v4() NOT NULL,
+        "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
         "user_id" uuid NOT NULL,
         "name" varchar NOT NULL,
         "slug" varchar NOT NULL UNIQUE,
         "is_active" boolean DEFAULT true NOT NULL,
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL,
-        CONSTRAINT "PK_crypto_sources" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_crypto_sources_user" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
+        FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
       )
     `);
 
@@ -26,13 +25,12 @@ export class AddCryptoDealsTable1708000000031 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "crypto_deals" (
-        "id" uuid DEFAULT uuid_generate_v4() NOT NULL,
+        "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
         "source_id" uuid NOT NULL,
         "payload" jsonb NOT NULL,
         "sender_ip" varchar NULL,
         "created_at" timestamp DEFAULT now() NOT NULL,
-        CONSTRAINT "PK_crypto_deals" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_crypto_deals_source" FOREIGN KEY ("source_id") REFERENCES "crypto_sources"("id") ON DELETE CASCADE
+        FOREIGN KEY ("source_id") REFERENCES "crypto_sources"("id") ON DELETE CASCADE
       )
     `);
 
