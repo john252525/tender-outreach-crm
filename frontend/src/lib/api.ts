@@ -24,6 +24,7 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       ...options,
+      cache: 'no-store',
       headers: {
         ...this.getHeaders(),
         ...options.headers,
@@ -35,6 +36,7 @@ class ApiClient {
       if (refreshed) {
         const retryResponse = await fetch(url, {
           ...options,
+          cache: 'no-store',
           headers: {
             ...this.getHeaders(),
             ...options.headers,
