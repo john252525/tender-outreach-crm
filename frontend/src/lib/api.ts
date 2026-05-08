@@ -54,10 +54,12 @@ class ApiClient {
 
       Cookies.remove('accessToken');
       Cookies.remove('refreshToken');
-      if (typeof window !== 'undefined') {
+      const error = await response.json().catch(() => ({}));
+      const msg = typeof error.message === 'string' ? error.message : 'Сессия истекла';
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
-      throw new Error('Сессия истекла');
+      throw new Error(msg);
     }
 
     if (!response.ok) {

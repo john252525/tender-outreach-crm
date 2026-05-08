@@ -3,16 +3,16 @@
 import { useState, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 import { Purchase, PurchaseFile, PurchaseAiResult, WebSearchResult } from '@/types';
-import { Wand2, Loader2, Check, X } from 'lucide-react';
+import { Wand2, Loader2, Check, X, Send } from 'lucide-react';
+import { getPipeline, setPipeline, usePipeline, PipelineStep } from '@/lib/pipeline-store';
 
 interface Props {
   purchaseId: string;
   onComplete?: () => void;
+  onApprove?: (data: { emails: string[]; subject: string; body: string }) => void;
 }
 
-type StepStatus = 'idle' | 'docs' | 'ai' | 'search' | 'emails' | 'done' | 'error';
-
-const STEP_LABELS: Record<StepStatus, string> = {
+const STEP_LABELS: Record<PipelineStep, string> = {
   idle: '',
   docs: 'Документы...',
   ai: 'AI-анализ...',
@@ -22,48 +22,46 @@ const STEP_LABELS: Record<StepStatus, string> = {
   error: 'Ошибка',
 };
 
-export default function MagicButtonCompact({ purchaseId, onComplete }: Props) {
-  const [step, setStep] = useState<StepStatus>('idle');
-  const [emailCount, setEmailCount] = useState(0);
-  const running = useRef(false);
+export default function MagicButtonCompact({ purchaseId, onComplete, onApprove }: Props) {
+  // Initialize from global store so state survives navigation
+  const entry = usePipeline(purchaseId);
+  const running = useRef(getPipeline(purchaseId).running);
+
+  const syncStep = (step: PipelineStep) => {
+    setPipeline(purchaseId, { step, running: step !== 'idle' && step !== 'done' && step !== 'error' });
+  };
+
+  const syncResult = (emails: string[], subject: string, body: string) => {
+    setPipeline(purchaseId, { emailCount: emails.length, result: { emails, subject, body } });
+  };
 
   const run = useCallback(async () => {
     if (running.current) return;
     running.current = true;
-    setEmailCount(0);
+    setPipeline(purchaseId, { step: 'docs', emailCount: 0, result: null, running: true });
 
     try {
       // Load purchase with files
-      setStep('docs');
       let purchase: Purchase;
       try {
-        // We need to get purchase number from id - use the detail view
-        // Actually, we can call prepare directly which handles file loading
-        // But we need to parse docs first. Let's fetch the purchase data
-        const found = await api.get<{ data: any[] }>(
-          `/purchases/found?page=1&limit=200`,
-        );
+        const found = await api.get<{ data: any[] }>(`/purchases/found?page=1&limit=200`);
         const item = found.data.find((f: any) => f.purchaseId === purchaseId);
         if (!item?.purchase) throw new Error('Закупка не найдена');
         purchase = item.purchase;
       } catch {
-        // Try getting by purchaseId directly via existing endpoints
-        // If that fails, just proceed to AI step
-        setStep('ai');
+        // Fallback: skip doc parsing, go straight to AI
+        syncStep('ai');
         let aiResult: PurchaseAiResult | null = null;
         try {
-          aiResult = await api.post<PurchaseAiResult>(
-            `/purchases/${purchaseId}/prepare`,
-            {},
-          );
+          aiResult = await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
         } catch {
-          setStep('error');
+          syncStep('error');
           running.current = false;
           return;
         }
 
         if (aiResult?.searchTerm) {
-          setStep('search');
+          syncStep('search');
           let searchResults: WebSearchResult[] = [];
           try {
             searchResults = await api.post<WebSearchResult[]>(
@@ -75,7 +73,7 @@ export default function MagicButtonCompact({ purchaseId, onComplete }: Props) {
           }
 
           if (searchResults.length > 0) {
-            setStep('emails');
+            syncStep('emails');
             const allEmails = new Set<string>();
             for (const site of searchResults) {
               try {
@@ -88,11 +86,14 @@ export default function MagicButtonCompact({ purchaseId, onComplete }: Props) {
                 // continue
               }
             }
-            setEmailCount(allEmails.size);
+            const emailList = Array.from(allEmails);
+            if (emailList.length > 0) {
+              syncResult(emailList, aiResult?.subject || '', aiResult?.body || '');
+            }
           }
         }
 
-        setStep('done');
+        syncStep('done');
         running.current = false;
         onComplete?.();
         return;
@@ -109,15 +110,12 @@ export default function MagicButtonCompact({ purchaseId, onComplete }: Props) {
       }
 
       // AI Prepare
-      setStep('ai');
+      syncStep('ai');
       let aiResult: PurchaseAiResult | null = null;
       try {
-        aiResult = await api.post<PurchaseAiResult>(
-          `/purchases/${purchaseId}/prepare`,
-          {},
-        );
+        aiResult = await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
       } catch {
-        setStep('error');
+        syncStep('error');
         running.current = false;
         return;
       }
@@ -125,7 +123,7 @@ export default function MagicButtonCompact({ purchaseId, onComplete }: Props) {
       // Web search
       let searchResults: WebSearchResult[] = [];
       if (aiResult?.searchTerm) {
-        setStep('search');
+        syncStep('search');
         try {
           searchResults = await api.post<WebSearchResult[]>(
             `/purchases/web-search/${aiResult.searchTerm.id}`,
@@ -138,7 +136,7 @@ export default function MagicButtonCompact({ purchaseId, onComplete }: Props) {
 
       // Parse emails
       if (searchResults.length > 0) {
-        setStep('emails');
+        syncStep('emails');
         const allEmails = new Set<string>();
         for (const site of searchResults) {
           try {
@@ -151,51 +149,69 @@ export default function MagicButtonCompact({ purchaseId, onComplete }: Props) {
             // continue
           }
         }
-        setEmailCount(allEmails.size);
+        const emailList = Array.from(allEmails);
+        if (emailList.length > 0) {
+          syncResult(emailList, aiResult?.subject || '', aiResult?.body || '');
+        }
       }
 
-      setStep('done');
+      syncStep('done');
       onComplete?.();
     } catch {
-      setStep('error');
+      syncStep('error');
     } finally {
       running.current = false;
+      setPipeline(purchaseId, { running: false });
     }
-  }, [purchaseId, onComplete]);
+  }, [purchaseId, onComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { step, result } = entry;
   const isRunning = step !== 'idle' && step !== 'done' && step !== 'error';
 
   return (
-    <button
-      onClick={run}
-      disabled={isRunning}
-      className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-all disabled:cursor-wait ${
-        step === 'done'
-          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
-          : step === 'error'
-            ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
-            : isRunning
-              ? 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-900/30'
-              : 'text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-pink-700 shadow-sm'
-      }`}
-      title={isRunning ? STEP_LABELS[step] : 'Полный цикл обработки'}
-    >
-      {step === 'done' ? (
-        <Check size={12} />
-      ) : step === 'error' ? (
-        <X size={12} />
-      ) : isRunning ? (
-        <Loader2 size={12} className="animate-spin" />
-      ) : (
-        <Wand2 size={12} />
+    <div className="flex max-w-full flex-col items-stretch sm:items-end gap-1">
+      <button
+        onClick={run}
+        disabled={isRunning}
+        className={`inline-flex max-w-full items-center justify-center gap-1 px-2 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-all disabled:cursor-wait text-center break-words ${
+          step === 'done'
+            ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
+            : step === 'error'
+              ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
+              : isRunning
+                ? 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-900/30'
+                : 'text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-700 hover:via-fuchsia-700 hover:to-pink-700 shadow-sm'
+        }`}
+        title={isRunning ? STEP_LABELS[step] : 'Полный цикл обработки'}
+      >
+        {step === 'done' ? (
+          <Check size={12} />
+        ) : step === 'error' ? (
+          <X size={12} />
+        ) : isRunning ? (
+          <Loader2 size={12} className="animate-spin" />
+        ) : (
+          <Wand2 size={12} />
+        )}
+        {isRunning
+          ? STEP_LABELS[step]
+          : step === 'done'
+            ? entry.emailCount > 0 ? `${entry.emailCount} email` : 'Готово'
+            : step === 'error'
+              ? 'Ошибка'
+              : 'Magic'}
+      </button>
+
+      {result && onApprove && (
+        <button
+          onClick={() => onApprove(result)}
+          className="inline-flex max-w-full items-center justify-center gap-1 px-2 py-1 text-[11px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-md transition-colors text-center break-words"
+          title="Отправить в Email Outreach"
+        >
+          <Send size={11} />
+          В рассылку
+        </button>
       )}
-      {isRunning
-        ? STEP_LABELS[step]
-        : step === 'done'
-          ? emailCount > 0 ? `${emailCount} email` : 'Готово'
-          : step === 'error'
-            ? 'Ошибка'
-            : 'Magic'}
-    </button>
+    </div>
   );
 }

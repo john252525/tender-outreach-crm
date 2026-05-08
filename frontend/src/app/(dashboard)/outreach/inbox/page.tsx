@@ -97,27 +97,27 @@ export default function OutreachInboxPage() {
   return (
     <>
       <Header title="Входящие ответы" user={user} />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
           <Link
             href="/outreach"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
           >
             <ArrowLeft size={16} /> Назад
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {checkResult && (
               <span className="text-xs text-gray-500 dark:text-gray-400">{checkResult}</span>
             )}
             <button
               onClick={handleCheckReplies}
               disabled={checking}
-              className="btn-secondary !py-1.5 !px-3 flex items-center gap-1.5 text-sm disabled:opacity-50"
+              className="btn-secondary !py-1.5 !px-3 flex w-full sm:w-auto items-center justify-center gap-1.5 text-sm disabled:opacity-50"
             >
               <RefreshCw size={14} className={checking ? 'animate-spin' : ''} />
               {checking ? 'Проверяю...' : 'Проверить почту'}
             </button>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="w-full sm:w-auto text-sm text-gray-500 dark:text-gray-400">
               Всего ответов: <span className="font-medium text-gray-700 dark:text-gray-300">{total}</span>
             </p>
           </div>
@@ -141,39 +141,39 @@ export default function OutreachInboxPage() {
               {emails.map((email) => (
                 <div key={email.id} className="card">
                   <div
-                    className="flex items-center justify-between gap-4 cursor-pointer"
+                    className="flex flex-wrap items-center justify-between gap-2 cursor-pointer"
                     onClick={() => setExpandedId(expandedId === email.id ? null : email.id)}
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                       <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
                         <MessageSquare size={16} className="text-green-600" />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">
                             {email.toEmail}
                           </p>
                           {email.subject && (
-                            <span className="text-xs text-gray-500 truncate">
+                            <span className="text-xs text-gray-500 break-words">
                               Re: {email.subject}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           <span className="flex items-center gap-1">
                             <Clock size={10} /> Ответ: {formatDateTime(email.repliedAt)}
                           </span>
-                          <span className="flex items-center gap-1">
+                          <span className="hidden sm:flex items-center gap-1">
                             <Send size={10} /> Отправлено: {formatDateTime(email.sentAt)}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto sm:justify-end" onClick={(e) => e.stopPropagation()}>
                       {email.replyText && (
                         <Link
                           href={`/messenger?email=${encodeURIComponent(email.toEmail)}`}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/20 dark:text-primary-400 rounded-md hover:bg-primary-100 transition-colors"
+                          className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/20 dark:text-primary-400 rounded-md hover:bg-primary-100 transition-colors w-full sm:w-auto"
                         >
                           <ExternalLink size={12} /> Открыть в мессенджере
                         </Link>
@@ -199,9 +199,9 @@ export default function OutreachInboxPage() {
                               {email.subject}
                             </p>
                           )}
-                          <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                            {email.body}
-                          </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">
+                              {email.body}
+                            </p>
                         </div>
                       </div>
 
@@ -212,7 +212,7 @@ export default function OutreachInboxPage() {
                             Ответ:
                           </p>
                           <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-                            <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words">
                               {email.replyText}
                             </p>
                           </div>
@@ -225,7 +225,7 @@ export default function OutreachInboxPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Страница {page} из {totalPages}
                 </p>

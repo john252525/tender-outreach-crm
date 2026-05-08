@@ -59,7 +59,7 @@ export default function SshBrowserPage() {
   return (
     <>
       <Header title="SSH Browser" user={user} />
-      <div className="p-6 max-w-4xl">
+      <div className="p-3 sm:p-6 max-w-4xl">
         {!serverId && (
           <div className="card mb-6 flex items-center gap-3 text-gray-500">
             <Terminal size={20} />
@@ -74,7 +74,7 @@ export default function SshBrowserPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Путь на сервере
             </label>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={path}
@@ -85,7 +85,7 @@ export default function SshBrowserPage() {
               <button
                 type="submit"
                 disabled={loading || !serverId}
-                className="btn-primary flex items-center gap-2 whitespace-nowrap"
+                className="btn-primary flex items-center justify-center gap-2 sm:whitespace-nowrap"
               >
                 <Search size={18} />
                 {loading ? 'Загрузка...' : 'Показать файлы'}

@@ -259,7 +259,7 @@ export default function MailingDetailPage() {
     return (
       <>
         <Header title="Рассылка" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="card p-8 text-center">
             <AlertTriangle size={48} className="mx-auto mb-4 text-red-500" />
             <p className="text-gray-600 dark:text-gray-400">{error || 'Рассылка не найдена'}</p>
@@ -277,15 +277,15 @@ export default function MailingDetailPage() {
   return (
     <>
       <Header title={project.name} user={user} />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* Back + Status + Actions */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-6">
           <Link href="/mailings" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
             <ArrowLeft size={20} />
           </Link>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex-1">{project.name}</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex-1 break-words">{project.name}</h2>
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${st.color}`}>{st.label}</span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {project.status === 'paused' && (
               <button onClick={() => handleAction('start')} disabled={actionLoading} className="btn-primary flex items-center gap-2 text-sm">
                 {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Запустить
@@ -305,27 +305,27 @@ export default function MailingDetailPage() {
         </div>
 
         {/* Info cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="card p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="card p-3 sm:p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Получателей</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{project.recipientCount ?? 0}</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{project.recipientCount ?? 0}</p>
           </div>
-          <div className="card p-4">
+          <div className="card p-3 sm:p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Интервал</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{project.minInterval}–{project.maxInterval}с</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{project.minInterval}–{project.maxInterval}с</p>
           </div>
-          <div className="card p-4">
+          <div className="card p-3 sm:p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Часовой пояс</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">UTC+{project.timezone}</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">UTC+{project.timezone}</p>
           </div>
-          <div className="card p-4">
+          <div className="card p-3 sm:p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Аккаунтов</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{project.accounts?.length ?? 0}</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{project.accounts?.length ?? 0}</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
           {[
             { key: 'settings' as Tab, label: 'Настройки', icon: <Settings size={16} /> },
             { key: 'recipients' as Tab, label: 'Получатели', icon: <Users size={16} /> },
@@ -334,7 +334,7 @@ export default function MailingDetailPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 tab === t.key
                   ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -347,7 +347,7 @@ export default function MailingDetailPage() {
 
         {/* Settings Tab */}
         {tab === 'settings' && (
-          <div className="card p-6 space-y-6">
+          <div className="card p-4 sm:p-6 space-y-6">
             <div>
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Текст сообщения</h3>
               <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
@@ -425,7 +425,7 @@ export default function MailingDetailPage() {
             {/* Test Send */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Тестовая отправка</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input
                   type="text"
                   placeholder="Номер телефона"
@@ -462,7 +462,7 @@ export default function MailingDetailPage() {
         {tab === 'recipients' && (
           <div className="space-y-6">
             {/* Import */}
-            <div className="card p-6">
+            <div className="card p-4 sm:p-6">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Импорт получателей</h3>
               <textarea
                 value={importText}
@@ -470,7 +470,7 @@ export default function MailingDetailPage() {
                 placeholder="Вставьте номера телефонов (каждый с новой строки)"
                 className="input-field w-full h-32 resize-y mb-3"
               />
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <button onClick={handleImportText} disabled={importing || !importText.trim()} className="btn-secondary flex items-center gap-2">
                   {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                   Проверить номера
@@ -482,7 +482,7 @@ export default function MailingDetailPage() {
                       в блоке: <b className="text-red-500">{importResult.blockedPhonesCount}</b>,
                       всего: {importResult.allPhonesCount}
                     </span>
-                    <button onClick={handleSaveRecipients} disabled={importing} className="btn-primary flex items-center gap-2 ml-auto">
+                    <button onClick={handleSaveRecipients} disabled={importing} className="btn-primary flex items-center gap-2 sm:ml-auto">
                       {importing ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                       Сохранить получателей
                     </button>
@@ -493,7 +493,7 @@ export default function MailingDetailPage() {
 
             {/* Recipient List */}
             <div className="card">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Получатели ({recipients.length})
                 </h3>
@@ -512,7 +512,7 @@ export default function MailingDetailPage() {
                       <tr className="border-b border-gray-200 dark:border-gray-700">
                         <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Телефон</th>
                         <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Статус</th>
-                        <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Приоритет</th>
+                        <th className="hidden sm:table-cell text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Приоритет</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -520,7 +520,7 @@ export default function MailingDetailPage() {
                         <tr key={r.uuid} className="border-b border-gray-50 dark:border-gray-800">
                           <td className="py-2 px-4 text-gray-700 dark:text-gray-300 font-mono">{r.phone}</td>
                           <td className="py-2 px-4 text-gray-500 dark:text-gray-400 text-xs">{r.processingStatus || '—'}</td>
-                          <td className="py-2 px-4 text-gray-500 dark:text-gray-400">{r.priority ?? '—'}</td>
+                          <td className="hidden sm:table-cell py-2 px-4 text-gray-500 dark:text-gray-400">{r.priority ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -567,9 +567,9 @@ export default function MailingDetailPage() {
                       <tr className="border-b border-gray-200 dark:border-gray-700">
                         <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Телефон</th>
                         <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Статус</th>
-                        <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Канал</th>
-                        <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Текст</th>
-                        <th className="text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Дата</th>
+                        <th className="hidden sm:table-cell text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Канал</th>
+                        <th className="hidden sm:table-cell text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Текст</th>
+                        <th className="hidden sm:table-cell text-left py-2 px-4 text-gray-500 dark:text-gray-400 font-medium">Дата</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -588,9 +588,9 @@ export default function MailingDetailPage() {
                                 </p>
                               )}
                             </td>
-                            <td className="py-2 px-4 text-xs text-gray-500 capitalize">{m.sendedSource || '—'}</td>
-                            <td className="py-2 px-4 text-xs text-gray-600 dark:text-gray-400 truncate max-w-xs">{m.text}</td>
-                            <td className="py-2 px-4 text-xs text-gray-400">{m.finishedAt ? new Date(m.finishedAt).toLocaleString('ru-RU') : '—'}</td>
+                            <td className="hidden sm:table-cell py-2 px-4 text-xs text-gray-500 capitalize">{m.sendedSource || '—'}</td>
+                            <td className="hidden sm:table-cell py-2 px-4 text-xs text-gray-600 dark:text-gray-400 truncate max-w-xs">{m.text}</td>
+                            <td className="hidden sm:table-cell py-2 px-4 text-xs text-gray-400">{m.finishedAt ? new Date(m.finishedAt).toLocaleString('ru-RU') : '—'}</td>
                           </tr>
                         );
                       })}
@@ -598,7 +598,7 @@ export default function MailingDetailPage() {
                   </table>
                 </div>
                 {msgTotal > msgLimit && (
-                  <div className="p-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                  <div className="p-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-xs text-gray-500">
                       {msgPage * msgLimit + 1}–{Math.min((msgPage + 1) * msgLimit, msgTotal)} из {msgTotal}
                     </span>

@@ -12,6 +12,7 @@ import { ProzorroAiResult } from './entities/prozorro-ai-result.entity';
 import { ProzorroWebResult } from './entities/prozorro-web-result.entity';
 import { ProzorroBlacklist } from './entities/prozorro-blacklist.entity';
 import { SearchProzorroDto } from './dto/search-prozorro.dto';
+import { callAiApi } from '../common/ai-api.util';
 
 const PROZORRO_API = 'https://public-api.prozorro.gov.ua/api/2.5';
 
@@ -314,16 +315,7 @@ export class ProzorroService {
 
     let aiResponse: any;
     try {
-      const response = await fetch(aiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: data }),
-        signal: AbortSignal.timeout(120000),
-      });
-      if (!response.ok) {
-        throw new Error(`AI API returned status ${response.status}`);
-      }
-      aiResponse = await response.json();
+      aiResponse = await callAiApi(aiUrl, data);
     } catch (error: any) {
       this.logger.error(`AI API call failed: ${error.message}`);
       throw new BadRequestException(`Ошибка AI API: ${error.message}`);

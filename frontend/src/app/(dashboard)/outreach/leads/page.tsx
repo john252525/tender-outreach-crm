@@ -251,8 +251,8 @@ export default function OutreachLeadsPage() {
   return (
     <>
       <Header title="База лидов" user={user} />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
           <Link
             href="/outreach"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
@@ -273,7 +273,7 @@ export default function OutreachLeadsPage() {
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
               Новый список лидов
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Название *
@@ -329,7 +329,7 @@ export default function OutreachLeadsPage() {
           <div className="space-y-3">
             {lists.map((list) => (
               <div key={list.id} className="card">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
                   <div
                     className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                     onClick={() => handleExpandList(list.id)}
@@ -380,7 +380,7 @@ export default function OutreachLeadsPage() {
                 {/* Leads Table */}
                 {expandedListId === list.id && (
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                       <p className="text-xs text-gray-500">{leadsTotal} лидов</p>
                       <div className="flex items-center gap-2">
                         <button
@@ -410,7 +410,7 @@ export default function OutreachLeadsPage() {
                           className="input-field text-xs font-mono w-full"
                           placeholder={`ivan@example.com, Иван, Петров, ООО Ромашка\nanna@company.ru, Анна, Сидорова\npeter@mail.com`}
                         />
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
                           <span className="text-xs text-gray-400">
                             {bulkText.trim() ? `${bulkText.split('\n').filter((l) => l.trim()).length} строк` : 'Пусто'}
                           </span>
@@ -436,7 +436,7 @@ export default function OutreachLeadsPage() {
 
                     {showAddLead && (
                       <form onSubmit={handleAddLead} className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                           <input type="email" required placeholder="Email *" value={leadForm.email} onChange={(e) => setLeadForm((p) => ({ ...p, email: e.target.value }))} className="input-field text-xs" />
                           <input type="text" placeholder="Имя" value={leadForm.firstName} onChange={(e) => setLeadForm((p) => ({ ...p, firstName: e.target.value }))} className="input-field text-xs" />
                           <input type="text" placeholder="Фамилия" value={leadForm.lastName} onChange={(e) => setLeadForm((p) => ({ ...p, lastName: e.target.value }))} className="input-field text-xs" />
@@ -466,7 +466,7 @@ export default function OutreachLeadsPage() {
                         {leads.map((lead) => (
                           <div
                             key={lead.id}
-                            className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                           >
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                               <AtSign size={14} className="text-gray-400 shrink-0" />
@@ -479,12 +479,12 @@ export default function OutreachLeadsPage() {
                                 </span>
                               )}
                               {lead.company && (
-                                <span className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+                                <span className="hidden sm:inline-flex items-center gap-1 text-xs text-gray-400 shrink-0">
                                   <Building2 size={10} /> {lead.company}
                                 </span>
                               )}
                               {lead.website && (
-                                <span className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+                                <span className="hidden sm:inline-flex items-center gap-1 text-xs text-gray-400 shrink-0">
                                   <Globe size={10} /> {lead.website}
                                 </span>
                               )}

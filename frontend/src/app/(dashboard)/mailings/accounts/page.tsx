@@ -116,7 +116,7 @@ export default function MailingAccountsPage() {
     return (
       <>
         <Header title="Аккаунты рассылок" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="card p-8 text-center">
             <AlertTriangle size={48} className="mx-auto mb-4 text-yellow-500" />
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Токен не настроен</h2>
@@ -133,8 +133,8 @@ export default function MailingAccountsPage() {
   return (
     <>
       <Header title="Аккаунты рассылок" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6">
           <button onClick={() => fetchAccounts()} className="btn-secondary flex items-center gap-2">
             <RefreshCw size={16} /> Обновить
           </button>
@@ -159,7 +159,7 @@ export default function MailingAccountsPage() {
             <p>Аккаунты не найдены</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {accounts.map((acc) => {
               const sourceColor = SOURCE_COLORS[acc.source] || 'bg-gray-100 text-gray-600';
               const isLoading = actionLoading === acc.uuid;
@@ -196,10 +196,10 @@ export default function MailingAccountsPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreate(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Новый аккаунт</h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Источник</label>
                 <select
@@ -243,7 +243,7 @@ export default function MailingAccountsPage() {
                 />
               </div>
             </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-end gap-3">
               <button onClick={() => setShowCreate(false)} className="btn-secondary">Отмена</button>
               <button
                 onClick={handleCreate}

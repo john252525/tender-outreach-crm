@@ -75,8 +75,8 @@ export default function SearchQueriesPage() {
   return (
     <>
       <Header title="История поисковых запросов" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
           <Link
             href="/purchases"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
@@ -103,7 +103,7 @@ export default function SearchQueriesPage() {
             <div className="space-y-3">
               {data.map((query) => (
                 <div key={query.id} className="card hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <Search size={14} className="text-primary-500 shrink-0" />
@@ -134,11 +134,11 @@ export default function SearchQueriesPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-4 sm:mt-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Всего: {total}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}

@@ -248,7 +248,7 @@ export default function MessengerPage() {
     const isExpanded = expandedEmails.has(msg.id);
 
     return (
-      <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+      <div className={`max-w-[94%] sm:max-w-[85%] rounded-2xl px-4 py-3 ${
         msg.fromMe
           ? 'bg-primary-600 text-white rounded-br-md'
           : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md shadow-sm'
@@ -258,7 +258,7 @@ export default function MessengerPage() {
             msg.fromMe ? 'text-white/90 border-white/20' : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
           }`}>
             <Mail size={12} className="shrink-0" />
-            <span className="truncate">{msg.subject}</span>
+            <span className="break-words">{msg.subject}</span>
           </div>
         )}
 
@@ -286,7 +286,7 @@ export default function MessengerPage() {
         )}
 
         {needsTruncation && (
-          <div className={`flex items-center gap-1 mt-2 pt-1.5 border-t ${msg.fromMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-600'}`}>
+          <div className={`flex flex-wrap items-center gap-1 mt-2 pt-1.5 border-t ${msg.fromMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-600'}`}>
             <button onClick={() => toggleExpand(msg.id)}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
                 msg.fromMe ? 'hover:bg-white/15 text-white/80' : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400'
@@ -335,7 +335,7 @@ export default function MessengerPage() {
     return (
       <>
         <Header title="Мессенджер" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="card text-center py-12">
             <AlertCircle size={48} className="mx-auto text-amber-400 mb-4" />
             <p className="text-gray-700 dark:text-gray-300 font-medium">Нет почтовых аккаунтов</p>
@@ -354,10 +354,10 @@ export default function MessengerPage() {
   return (
     <>
       <Header title="Мессенджер" user={user} />
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+      <div className="flex flex-col" style={{ height: 'calc(100dvh - 64px)' }}>
 
         {/* Account selector bar */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 shrink-0 overflow-x-auto">
           {accounts.map((acc) => {
             const isActive = selectedAccount?.id === acc.id;
             return (
@@ -368,7 +368,9 @@ export default function MessengerPage() {
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
                 }`}>
                 <Mail size={13} />
-                {acc.senderName ? `${acc.senderName} <${acc.email}>` : acc.email}
+                <span className="max-w-[180px] truncate">
+                  {acc.senderName ? `${acc.senderName} <${acc.email}>` : acc.email}
+                </span>
               </button>
             );
           })}
@@ -377,7 +379,7 @@ export default function MessengerPage() {
         {/* Main layout */}
         <div className="flex flex-1 min-h-0">
           {/* Left — chat list */}
-          <div className="w-80 shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className={`${activeChat ? 'hidden sm:flex' : 'flex'} w-full sm:w-96 shrink-0 flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800`}>
             <div className="p-3 border-b border-gray-200 dark:border-gray-700">
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -413,11 +415,11 @@ export default function MessengerPage() {
                         <UserIcon size={20} className="text-gray-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2">
                           <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{chat.name}</span>
                           <span className="text-[10px] text-gray-400 shrink-0">{formatTime(chat.lastMessageTime || 0)}</span>
                         </div>
-                        <div className="flex items-center justify-between gap-2 mt-0.5">
+                        <div className="flex items-start justify-between gap-2 mt-0.5">
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{chat.lastMessage}</p>
                           {!!chat.unreadCount && chat.unreadCount > 0 && (
                             <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-primary-600 text-white shrink-0">
@@ -442,7 +444,7 @@ export default function MessengerPage() {
           </div>
 
           {/* Right — messages */}
-          <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-gray-900">
+          <div className={`${activeChat ? 'flex' : 'hidden sm:flex'} flex-1 flex-col min-w-0 bg-gray-50 dark:bg-gray-900`}>
             {!activeChat ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
@@ -454,7 +456,7 @@ export default function MessengerPage() {
             ) : (
               <>
                 {/* Chat header */}
-                <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
+                <div className="flex items-center gap-3 px-3 sm:px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
                   <button onClick={() => setActiveChat(null)} className="lg:hidden p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400">
                     <ArrowLeft size={18} />
                   </button>
@@ -474,7 +476,7 @@ export default function MessengerPage() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+                <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 space-y-2">
                   {loadingMessages && messages.length === 0 ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 size={24} className="animate-spin text-primary-600" />
@@ -495,7 +497,7 @@ export default function MessengerPage() {
 
                 {/* Input */}
                 <div className="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                     <Mail size={14} className="text-gray-400 shrink-0" />
                     <input
                       type="text"
@@ -505,7 +507,7 @@ export default function MessengerPage() {
                       className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-1 focus:ring-primary-500 outline-none"
                     />
                   </div>
-                  <form onSubmit={handleSend} className="flex items-end gap-2">
+                  <form onSubmit={handleSend} className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
                     <textarea
                       ref={inputRef}
                       value={msgText}
@@ -519,7 +521,7 @@ export default function MessengerPage() {
                       style={{ minHeight: '80px' }}
                     />
                     <button type="submit" disabled={sending || !msgText.trim()}
-                      className="p-2.5 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
+                      className="w-full sm:w-auto p-2.5 bg-primary-600 text-white rounded-2xl sm:rounded-full hover:bg-primary-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
                       {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                     </button>
                   </form>
@@ -533,8 +535,8 @@ export default function MessengerPage() {
       {/* Email modal */}
       {modalEmail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-[min(48rem,calc(100vw-1rem))] max-h-[92dvh] flex flex-col">
+            <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <Mail size={18} className="text-rose-500 shrink-0" />
                 <div className="min-w-0">
@@ -555,7 +557,7 @@ export default function MessengerPage() {
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-auto p-6 min-h-0">
+            <div className="flex-1 overflow-auto p-4 sm:p-6 min-h-0">
               {modalEmail.bodyHtml ? (
                 <iframe
                   srcDoc={modalEmail.bodyHtml}

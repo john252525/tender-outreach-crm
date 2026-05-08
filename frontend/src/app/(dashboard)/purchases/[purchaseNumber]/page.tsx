@@ -180,8 +180,8 @@ export default function PurchaseDetailPage() {
   return (
     <>
       <Header title={`Тендер №${purchaseNumber}`} user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
           <Link
             href="/purchases"
             className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
@@ -204,8 +204,8 @@ export default function PurchaseDetailPage() {
           <div className="space-y-6">
             {/* Header card */}
             <div className="card">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
+              <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4 mb-4">
+                <div className="min-w-0 flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     № {purchase.purchaseNumber}
                   </h3>
@@ -225,7 +225,7 @@ export default function PurchaseDetailPage() {
                     </span>
                   )}
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                <p className="w-full sm:w-auto text-left sm:text-right text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 break-words">
                   {formatPrice(purchase.maxPrice, purchase.currencyCode)}
                 </p>
               </div>
@@ -300,56 +300,60 @@ export default function PurchaseDetailPage() {
                   {purchase.files.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+                      className="flex flex-col gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
                     >
-                      <FileText size={20} className="text-gray-400 group-hover:text-primary-600 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
-                          {file.fileName || file.docDescription || 'Документ'}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
-                          {file.docKindName && <span>{file.docKindName}</span>}
-                          {file.fileSize && <span>{formatFileSize(file.fileSize)}</span>}
-                          {file.docDate && <span>{formatDate(file.docDate)}</span>}
+                      <div className="flex items-start gap-3">
+                        <FileText size={18} className="text-gray-400 group-hover:text-primary-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 break-words">
+                            {file.fileName || file.docDescription || 'Документ'}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 mt-0.5">
+                            {file.docKindName && <span>{file.docKindName}</span>}
+                            {file.fileSize && <span>{formatFileSize(file.fileSize)}</span>}
+                            {file.docDate && <span>{formatDate(file.docDate)}</span>}
+                          </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handlePreview(file)}
-                        disabled={previewingFileId === file.id}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors shrink-0 disabled:opacity-60"
-                        title="Предпросмотр документа"
-                      >
-                        {previewingFileId === file.id ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Eye size={14} />
-                        )}
-                        Предпросмотр
-                      </button>
-                      {!file.parsedText && (
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
                         <button
-                          onClick={() => handleSave(file)}
-                          disabled={savingFileId === file.id}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors shrink-0 disabled:opacity-50"
-                          title="Сохранить текст документа"
+                          onClick={() => handlePreview(file)}
+                          disabled={previewingFileId === file.id}
+                          className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors disabled:opacity-60"
+                          title="Предпросмотр документа"
                         >
-                          {savingFileId === file.id ? (
+                          {previewingFileId === file.id ? (
                             <Loader2 size={14} className="animate-spin" />
                           ) : (
-                            <Save size={14} />
+                            <Eye size={14} />
                           )}
-                          {savingFileId === file.id ? 'Сохранение...' : 'Сохранить'}
+                          Предпросмотр
                         </button>
-                      )}
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0"
-                        title="Скачать"
-                      >
-                        <FileDown size={16} className="text-gray-400 hover:text-primary-600 transition-colors" />
-                      </a>
+                        {!file.parsedText && (
+                          <button
+                            onClick={() => handleSave(file)}
+                            disabled={savingFileId === file.id}
+                            className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+                            title="Сохранить текст документа"
+                          >
+                            {savingFileId === file.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Save size={14} />
+                            )}
+                            {savingFileId === file.id ? 'Сохранение...' : 'Сохранить'}
+                          </button>
+                        )}
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex w-full sm:w-auto items-center justify-center px-2.5 py-1.5 rounded-md bg-white/70 dark:bg-gray-800/60"
+                          title="Скачать"
+                        >
+                          <FileDown size={16} className="text-gray-400 hover:text-primary-600 transition-colors" />
+                        </a>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -411,7 +415,7 @@ export default function PurchaseDetailPage() {
             {/* AI Result (from previous analysis) */}
             {aiResult && (
               <div className="card">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <Sparkles size={16} className="text-violet-500" />
                     Результат AI-анализа
@@ -436,7 +440,7 @@ export default function PurchaseDetailPage() {
                       <Search size={16} className="text-violet-500 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-1">Поисковый запрос</p>
-                        <p className="text-sm text-gray-900 dark:text-gray-100">{aiResult.searchTerm.term}</p>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 break-words">{aiResult.searchTerm.term}</p>
                       </div>
                     </div>
                   )}
@@ -446,7 +450,7 @@ export default function PurchaseDetailPage() {
                       <Mail size={16} className="text-blue-500 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Тема письма</p>
-                        <p className="text-sm text-gray-900 dark:text-gray-100">{aiResult.subject}</p>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 break-words">{aiResult.subject}</p>
                       </div>
                     </div>
                   )}
@@ -468,13 +472,13 @@ export default function PurchaseDetailPage() {
 
             {/* Saved text modal */}
             {viewingFile && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setViewingFile(null)}>
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={() => setViewingFile(null)}>
                 <div
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[85vh] flex flex-col"
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-[min(64rem,calc(100vw-1rem))] max-h-[90dvh] flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate pr-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 break-words pr-4 max-w-full">
                       {viewingFile.fileName || viewingFile.docDescription || 'Документ'}
                     </h3>
                     <button
@@ -484,7 +488,7 @@ export default function PurchaseDetailPage() {
                       <X size={20} />
                     </button>
                   </div>
-                  <div className="flex-1 overflow-auto p-6">
+                  <div className="flex-1 overflow-auto p-4 sm:p-6">
                     <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words font-sans leading-relaxed">
                       {viewingFile.parsedText}
                     </pre>

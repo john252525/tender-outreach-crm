@@ -92,7 +92,7 @@ function AccountForm({
       <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {isEdit ? 'Редактирование аккаунта' : 'Новый почтовый аккаунт'}
       </h3>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             Email *
@@ -179,7 +179,7 @@ function AccountForm({
             className="input-field"
           />
         </div>
-        <div className="col-span-2">
+        <div className="col-span-1 sm:col-span-2">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 mt-2 uppercase tracking-wide">
             IMAP (для получения ответов)
           </p>
@@ -259,12 +259,12 @@ function AccountForm({
           placeholder={'С уважением,\nИван Петров'}
         />
       </div>
-      <div className="flex gap-2 mt-4">
-        <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 mt-4">
+        <button type="submit" disabled={saving} className="btn-primary flex items-center justify-center gap-2">
           {saving ? <Loader2 size={14} className="animate-spin" /> : isEdit ? <Save size={14} /> : <Plus size={14} />}
           {isEdit ? 'Сохранить' : 'Добавить'}
         </button>
-        <button type="button" onClick={onCancel} className="btn-secondary">
+        <button type="button" onClick={onCancel} className="btn-secondary justify-center">
           Отмена
         </button>
       </div>
@@ -414,8 +414,8 @@ export default function OutreachAccountsPage() {
   return (
     <>
       <Header title="Почтовые аккаунты" user={user} />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
           <Link
             href="/outreach"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
@@ -424,7 +424,7 @@ export default function OutreachAccountsPage() {
           </Link>
           <button
             onClick={() => { setShowForm(!showForm); setEditingId(null); }}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex w-full sm:w-auto items-center justify-center gap-2"
           >
             <Plus size={16} /> Добавить аккаунт
           </button>
@@ -470,8 +470,8 @@ export default function OutreachAccountsPage() {
                   />
                 ) : (
                   <div className="card">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0 w-full">
                         <div
                           className={`p-2 rounded-lg ${
                             account.status === 'active'
@@ -490,37 +490,37 @@ export default function OutreachAccountsPage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">
                               {account.email}
                             </p>
                             {account.senderName && (
                               <span className="text-xs text-gray-400">({account.senderName})</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            <span>SMTP: {account.smtpHost}:{account.smtpPort}</span>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            <span className="hidden sm:inline">SMTP: {account.smtpHost}:{account.smtpPort}</span>
                             {account.imapHost ? (
-                              <span className="text-green-600 dark:text-green-400">IMAP: {account.imapHost}</span>
+                              <span className="hidden sm:inline text-green-600 dark:text-green-400">IMAP: {account.imapHost}</span>
                             ) : (
-                              <span className="text-orange-500 dark:text-orange-400">IMAP не настроен</span>
+                              <span className="hidden sm:inline text-orange-500 dark:text-orange-400">IMAP не настроен</span>
                             )}
                             <span>Лимит: {account.dailyLimit}/день</span>
-                            <span>Отправлено сегодня: {account.sentToday}</span>
+                            <span>Сегодня: {account.sentToday}</span>
                             {account.smtpRelayUrl && (
                               <span className="text-teal-600 dark:text-teal-400">via Relay</span>
                             )}
                           </div>
                           {account.lastError && (
-                            <p className="text-xs text-red-500 mt-1 truncate">{account.lastError}</p>
+                            <p className="text-xs text-red-500 mt-1 break-words">{account.lastError}</p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0 w-full sm:w-auto sm:justify-end">
                         <button
                           onClick={() => handleTest(account.id)}
                           disabled={testingId === account.id}
-                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
+                          className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
                           title="Проверить подключение"
                         >
                           {testingId === account.id ? (

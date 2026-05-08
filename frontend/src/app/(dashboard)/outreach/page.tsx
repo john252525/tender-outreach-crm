@@ -57,19 +57,19 @@ export default function OutreachDashboardPage() {
   return (
     <>
       <Header title="Email Outreach" user={user} />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* Quick Actions */}
-        <div className="flex gap-3 mb-6">
-          <Link href="/outreach/accounts" className="btn-primary flex items-center gap-2">
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <Link href="/outreach/accounts" className="btn-primary w-full sm:w-auto justify-center flex items-center gap-2">
             <Mail size={16} /> Почтовые аккаунты
           </Link>
-          <Link href="/outreach/leads" className="btn-secondary flex items-center gap-2">
+          <Link href="/outreach/leads" className="btn-secondary w-full sm:w-auto justify-center flex items-center gap-2">
             <Users size={16} /> База лидов
           </Link>
-          <Link href="/outreach/campaigns" className="btn-secondary flex items-center gap-2">
+          <Link href="/outreach/campaigns" className="btn-secondary w-full sm:w-auto justify-center flex items-center gap-2">
             <Zap size={16} /> Кампании
           </Link>
-          <Link href="/outreach/inbox" className="btn-secondary flex items-center gap-2">
+          <Link href="/outreach/inbox" className="btn-secondary w-full sm:w-auto justify-center flex items-center gap-2">
             <MessageSquare size={16} /> Входящие
           </Link>
         </div>
@@ -80,7 +80,7 @@ export default function OutreachDashboardPage() {
           </div>
         ) : stats ? (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <StatCard
                 label="Почтовых аккаунтов"
                 value={stats.totalAccounts}
@@ -110,7 +110,7 @@ export default function OutreachDashboardPage() {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Статистика рассылок
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard
                 label="Отправлено"
                 value={stats.totalSent}
@@ -142,20 +142,20 @@ export default function OutreachDashboardPage() {
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   Конверсии
                 </h4>
-                <div className="flex gap-8">
-                  <div>
+                <div className="flex flex-wrap gap-4 sm:gap-8">
+                  <div className="min-w-[120px]">
                     <span className="text-2xl font-bold text-teal-600">
                       {((stats.totalOpened / stats.totalSent) * 100).toFixed(1)}%
                     </span>
                     <p className="text-xs text-gray-500">Open Rate</p>
                   </div>
-                  <div>
+                  <div className="min-w-[120px]">
                     <span className="text-2xl font-bold text-green-600">
                       {((stats.totalReplied / stats.totalSent) * 100).toFixed(1)}%
                     </span>
                     <p className="text-xs text-gray-500">Reply Rate</p>
                   </div>
-                  <div>
+                  <div className="min-w-[120px]">
                     <span className="text-2xl font-bold text-red-600">
                       {((stats.totalBounced / stats.totalSent) * 100).toFixed(1)}%
                     </span>

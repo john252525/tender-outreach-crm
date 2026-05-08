@@ -54,7 +54,7 @@ export default function ProfilePage() {
   return (
     <>
       <Header title="Профиль" user={user} />
-      <div className="p-6 max-w-2xl space-y-6">
+      <div className="p-3 sm:p-6 max-w-2xl space-y-6">
         <ThemedCard>
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
             <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
@@ -78,7 +78,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Имя</label>
                 <ThemedInput

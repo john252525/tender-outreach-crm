@@ -39,6 +39,9 @@ export class FoundPurchase {
   @Column({ name: 'is_favorite', type: 'boolean', default: false })
   isFavorite: boolean;
 
+  @Column({ name: 'last_activity_at', type: 'timestamp', nullable: true })
+  lastActivityAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

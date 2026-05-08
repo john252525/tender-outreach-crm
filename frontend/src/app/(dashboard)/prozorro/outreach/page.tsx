@@ -138,8 +138,8 @@ export default function ProzorroOutreachPage() {
   return (
     <>
       <Header title="Воронка рассылки (Prozorro)" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <Link href="/prozorro" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <ArrowLeft size={14} /> К поиску
           </Link>
@@ -149,7 +149,7 @@ export default function ProzorroOutreachPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
           {[
             { key: 'pipeline' as const, label: 'Воронка', count: outreach.length },
             { key: 'letters' as const, label: 'Письма', count: letters.length },
@@ -158,7 +158,7 @@ export default function ProzorroOutreachPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 tab === t.key
                   ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
@@ -187,7 +187,7 @@ export default function ProzorroOutreachPage() {
                 {outreach.map((item) => (
                   <div key={item.id} className="card">
                     {/* Header */}
-                    <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                       <div className="flex-1 min-w-0">
                         {item.tender && (
                           <Link
@@ -218,9 +218,9 @@ export default function ProzorroOutreachPage() {
 
                     {/* Search query */}
                     {item.searchQuery && (
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
                         <Search size={14} className="text-gray-400 flex-shrink-0" />
-                        <code className="text-sm flex-1 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded truncate">
+                        <code className="text-sm flex-1 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded break-all">
                           {item.searchQuery}
                         </code>
                         <button
@@ -265,7 +265,7 @@ export default function ProzorroOutreachPage() {
                             <div className="space-y-2 mt-1">
                               {item.webResults.map((wr) => (
                                 <div key={wr.id} className="bg-gray-50 dark:bg-gray-800 rounded p-2">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     {wr.favicon && (
                                       <img src={wr.favicon} alt="" className="w-4 h-4" />
                                     )}
@@ -380,15 +380,15 @@ export default function ProzorroOutreachPage() {
                       <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         Получатели ({letter.emails.length}):
                       </label>
-                      <div className="space-y-1 mt-1">
-                        {letter.emails.map((email) => {
+                            <div className="space-y-1 mt-1">
+                              {letter.emails.map((email) => {
                           const key = `${email}:${letter.subject}`;
                           const isSent = sentEmails.has(key);
                           const isSending = sendingKey === key;
 
                           return (
-                            <div key={email} className="flex items-center gap-2">
-                              <span className="text-sm flex-1">{email}</span>
+                            <div key={email} className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm flex-1 break-all">{email}</span>
                               <button
                                 onClick={() => handleSendEmail(email, letter.subject, letter.body)}
                                 disabled={isSending || isSent}
@@ -432,8 +432,8 @@ export default function ProzorroOutreachPage() {
                 )}
                 <div className="space-y-1">
                   {blacklist.map((entry) => (
-                    <div key={entry.id} className="flex items-center gap-2 py-1.5 px-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <span className="text-sm flex-1">{entry.email}</span>
+                    <div key={entry.id} className="flex flex-wrap items-center gap-2 py-1.5 px-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <span className="text-sm flex-1 break-all">{entry.email}</span>
                       <span className="text-xs text-gray-400">
                         {new Date(entry.createdAt).toLocaleDateString('ru-RU')}
                       </span>

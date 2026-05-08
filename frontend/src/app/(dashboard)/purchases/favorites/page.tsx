@@ -43,6 +43,38 @@ function formatDate(dateStr: string | null): string {
   });
 }
 
+type CardAiResult = NonNullable<NonNullable<FoundPurchase['aiResult']>>;
+
+function AiResultPreview({ aiResult }: { aiResult: CardAiResult }) {
+  return (
+    <div className="mt-3 rounded-lg border border-violet-100 dark:border-violet-800 bg-violet-50/80 dark:bg-violet-900/20 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400">
+        AI-анализ готов
+      </p>
+      {aiResult.searchTerm?.term ? (
+        <p className="mt-1 text-sm text-gray-900 dark:text-gray-100 break-words">
+          <span className="font-medium">Поиск:</span> {aiResult.searchTerm.term}
+        </p>
+      ) : null}
+      {aiResult.subject ? (
+        <p className="mt-1 text-sm text-gray-900 dark:text-gray-100 break-words">
+          <span className="font-medium">Тема:</span> {aiResult.subject}
+        </p>
+      ) : null}
+      {aiResult.body ? (
+        <p className="mt-1 text-xs text-gray-600 dark:text-gray-300 break-words line-clamp-3">
+          {aiResult.body}
+        </p>
+      ) : null}
+      {!aiResult.searchTerm?.term && !aiResult.subject && !aiResult.body ? (
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Результат сохранён, но сервис не вернул текст для отображения.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function FavoritesPage() {
   const { user } = useAuth();
   const [data, setData] = useState<FoundPurchase[]>([]);
@@ -70,13 +102,32 @@ export default function FavoritesPage() {
     fetchData();
   }, [fetchData]);
 
+  const applyAiResult = useCallback((purchaseId: string, aiResult: PurchaseAiResult) => {
+    setData((prev) =>
+      prev.map((item) =>
+        item.purchaseId === purchaseId
+          ? {
+              ...item,
+              aiResult: {
+                id: aiResult.id,
+                subject: aiResult.subject,
+                body: aiResult.body,
+                searchTerm: aiResult.searchTerm,
+              },
+            }
+          : item,
+      ),
+    );
+  }, []);
+
   const [preparingId, setPreparingId] = useState<string | null>(null);
 
   const handlePrepare = useCallback(async (purchaseId: string) => {
     if (preparingId) return;
     setPreparingId(purchaseId);
     try {
-      await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
+      const result = await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
+      applyAiResult(purchaseId, result);
       alert('AI-анализ завершён');
       fetchData();
     } catch (err) {
@@ -84,7 +135,7 @@ export default function FavoritesPage() {
     } finally {
       setPreparingId(null);
     }
-  }, [preparingId, fetchData]);
+  }, [preparingId, fetchData, applyAiResult]);
 
   const removeFavorite = useCallback(async (purchaseId: string) => {
     try {
@@ -103,8 +154,8 @@ export default function FavoritesPage() {
   return (
     <>
       <Header title="Избранные закупки" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
           <Link
             href="/purchases"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
@@ -131,12 +182,12 @@ export default function FavoritesPage() {
             <div className="space-y-4">
               {data.map((item) => (
                 <div key={item.id} className="card hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex flex-wrap items-start gap-2 mb-2">
                         <Link
                           href={`/purchases/${item.purchase.purchaseNumber}`}
-                          className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-sm transition-colors"
+                          className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium text-sm transition-colors break-all"
                         >
                           {item.purchase.purchaseNumber}
                         </Link>
@@ -175,12 +226,13 @@ export default function FavoritesPage() {
                           emailsCount={item.emailsCount}
                         />
                       </div>
+                      {item.aiResult && <AiResultPreview aiResult={item.aiResult} />}
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                    <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0 w-full sm:w-auto sm:min-w-[150px]">
+                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 text-left sm:text-right break-words">
                         {formatPrice(item.purchase.maxPrice, item.purchase.currencyCode)}
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-stretch sm:items-center gap-1.5 sm:gap-2 sm:justify-end w-full sm:w-auto">
                         <MagicButtonCompact
                           purchaseId={item.purchase.id}
                           onComplete={fetchData}
@@ -188,7 +240,7 @@ export default function FavoritesPage() {
                         <button
                           onClick={() => handlePrepare(item.purchase.id)}
                           disabled={preparingId === item.purchase.id}
-                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-md hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
+                          className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-md hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
                           title="AI-анализ"
                         >
                           {preparingId === item.purchase.id ? (
@@ -207,7 +259,7 @@ export default function FavoritesPage() {
                         </button>
                         <Link
                           href={`/purchases/${item.purchase.purchaseNumber}`}
-                          className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
+                          className="inline-flex w-full sm:w-auto items-center justify-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
                         >
                           Подробнее <ExternalLink size={12} />
                         </Link>
@@ -219,11 +271,11 @@ export default function FavoritesPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-4 sm:mt-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Всего: {total}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}

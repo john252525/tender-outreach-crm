@@ -65,8 +65,8 @@ export default function EmailsPage() {
   return (
     <>
       <Header title="Email-адреса" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
           <Link
             href="/purchases"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
@@ -161,7 +161,7 @@ export default function EmailsPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Стр. {page} / {totalPages}
                 </p>

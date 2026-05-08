@@ -179,7 +179,7 @@ export default function MailingsPage() {
     return (
       <>
         <Header title="Рассылки" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="card p-8 text-center">
             <AlertTriangle size={48} className="mx-auto mb-4 text-yellow-500" />
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Токен не настроен</h2>
@@ -196,9 +196,9 @@ export default function MailingsPage() {
   return (
     <>
       <Header title="Рассылки" user={user} />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -250,8 +250,8 @@ export default function MailingsPage() {
                   <tr className="border-b border-gray-200 dark:border-gray-700">
                     <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Название</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Статус</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Получателей</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Интервал</th>
+                    <th className="hidden sm:table-cell text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Получателей</th>
+                    <th className="hidden sm:table-cell text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Интервал</th>
                     <th className="text-right py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Действия</th>
                   </tr>
                 </thead>
@@ -271,8 +271,8 @@ export default function MailingsPage() {
                             {st.label}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{p.recipientCount ?? '—'}</td>
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{p.minInterval}–{p.maxInterval}с</td>
+                        <td className="hidden sm:table-cell py-3 px-4 text-gray-600 dark:text-gray-400">{p.recipientCount ?? '—'}</td>
+                        <td className="hidden sm:table-cell py-3 px-4 text-gray-600 dark:text-gray-400">{p.minInterval}–{p.maxInterval}с</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center justify-end gap-1">
                             <Link href={`/mailings/${p.uuid}`} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500" title="Подробнее">
@@ -307,8 +307,8 @@ export default function MailingsPage() {
 
             {/* Pagination */}
             {total > limit && (
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   {page * limit + 1}–{Math.min((page + 1) * limit, total)} из {total}
                 </span>
                 <div className="flex gap-1">
@@ -337,10 +337,10 @@ export default function MailingsPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreate(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Новая рассылка</h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название</label>
                 <input
@@ -360,7 +360,7 @@ export default function MailingsPage() {
                   placeholder="Текст сообщения для получателей..."
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Мин. интервал (с)</label>
                   <input
@@ -415,7 +415,7 @@ export default function MailingsPage() {
                 </div>
               )}
             </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-end gap-3">
               <button onClick={() => setShowCreate(false)} className="btn-secondary">Отмена</button>
               <button
                 onClick={handleCreate}

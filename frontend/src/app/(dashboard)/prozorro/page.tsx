@@ -67,7 +67,7 @@ function TenderCard({ tender }: { tender: ProzorroTender }) {
 
   return (
     <div className="card hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-2 sm:gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Link
@@ -87,20 +87,20 @@ function TenderCard({ tender }: { tender: ProzorroTender }) {
           >
             {tender.title}
           </Link>
-          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
             {tender.procuringEntityName && (
-              <span>Замовник: {tender.procuringEntityName}</span>
+              <span className="truncate max-w-xs sm:max-w-none">Замовник: {tender.procuringEntityName}</span>
             )}
             {tender.tenderPeriodEnd && (
               <span>До: {formatDate(tender.tenderPeriodEnd)}</span>
             )}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex flex-col items-end gap-2 flex-shrink-0 min-w-0">
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 text-right break-words">
             {formatPrice(tender.amount, tender.currency)}
           </div>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1 justify-end">
             <a
               href={`https://prozorro.gov.ua/tender/${tender.tenderNumber}`}
               target="_blank"
@@ -172,10 +172,10 @@ export default function ProzorroPage() {
   return (
     <>
       <Header title="Закупки Украина (Prozorro)" user={user} />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* Search form */}
         <form onSubmit={handleSearch} className="card mb-6">
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="flex-1 relative">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -201,7 +201,7 @@ export default function ProzorroPage() {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Статус</label>
                 <select
@@ -231,7 +231,7 @@ export default function ProzorroPage() {
         </form>
 
         {/* Navigation */}
-        <div className="flex gap-3 mb-4">
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
           <Link href="/prozorro/outreach" className="btn-secondary flex items-center gap-2 text-sm">
             <Send size={14} /> Воронка рассылки
           </Link>

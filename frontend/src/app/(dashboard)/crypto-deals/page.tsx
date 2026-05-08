@@ -149,8 +149,8 @@ export default function CryptoDealsPage() {
     return (
       <>
         <Header title="Криптосделки" user={user} />
-        <div className="p-6 max-w-5xl mx-auto space-y-6">
-          <div className="flex items-center gap-3">
+        <div className="p-3 sm:p-6 max-w-5xl mx-auto space-y-6">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => { setSelectedSource(null); setDeals([]); }}
               className="p-2 hover:bg-input-bg rounded-lg transition-colors text-secondary hover:text-card-foreground"
@@ -167,7 +167,7 @@ export default function CryptoDealsPage() {
 
           <div className="bg-card border border-card-border rounded-xl p-4">
             <p className="text-xs text-secondary mb-1">Webhook URL:</p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <code className="text-xs bg-input-bg px-3 py-1.5 rounded font-mono text-card-foreground break-all flex-1">
                 {baseUrl}/crypto-deals/webhook/{selectedSource.slug}
               </code>
@@ -200,7 +200,7 @@ export default function CryptoDealsPage() {
                   className="bg-card border border-card-border rounded-xl overflow-hidden"
                 >
                   <div
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-input-bg transition-colors"
+                    className="flex items-start justify-between gap-3 p-4 cursor-pointer hover:bg-input-bg transition-colors"
                     onClick={() => setExpandedDeal(expandedDeal === deal.id ? null : deal.id)}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -212,7 +212,7 @@ export default function CryptoDealsPage() {
                           {JSON.stringify(deal.payload).substring(0, 100)}
                           {JSON.stringify(deal.payload).length > 100 ? '...' : ''}
                         </p>
-                        <div className="flex items-center gap-3 mt-1">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
                           <span className="text-xs text-secondary">
                             {new Date(deal.createdAt).toLocaleString('ru-RU')}
                           </span>
@@ -274,7 +274,7 @@ export default function CryptoDealsPage() {
   return (
     <>
       <Header title="Криптосделки" user={user} />
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-3 sm:p-6 max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-card-foreground">Криптосделки</h1>
           <p className="text-secondary mt-1">
@@ -282,15 +282,15 @@ export default function CryptoDealsPage() {
           </p>
         </div>
 
-        <div className="bg-card border border-card-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-card border border-card-border rounded-xl p-4 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-2">
               <Link2 size={20} className="text-amber-500" />
               <h2 className="text-lg font-semibold text-card-foreground">Источники</h2>
             </div>
             <button
               onClick={() => setShowCreateForm(!showCreateForm)}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors w-full sm:w-auto"
             >
               <Plus size={16} />
               Создать источник
@@ -310,7 +310,7 @@ export default function CryptoDealsPage() {
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleCreate}
                   disabled={!newSourceName.trim() || creating}
@@ -343,7 +343,7 @@ export default function CryptoDealsPage() {
                   key={source.id}
                   className="p-4 bg-input-bg border border-card-border rounded-lg"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-card-foreground">{source.name}</span>
@@ -356,7 +356,7 @@ export default function CryptoDealsPage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <code className="text-xs text-secondary font-mono truncate max-w-md">
                           {baseUrl}/crypto-deals/webhook/{source.slug}
                         </code>
@@ -375,7 +375,7 @@ export default function CryptoDealsPage() {
                         Создан: {new Date(source.createdAt).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 self-end sm:self-auto">
                       <button
                         onClick={() => openSource(source)}
                         className="p-2 hover:bg-white/10 rounded transition-colors text-secondary hover:text-amber-400"

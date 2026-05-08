@@ -71,7 +71,7 @@ export default function MailingStatisticsPage() {
     return (
       <>
         <Header title="Статистика рассылок" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="card p-8 text-center">
             <AlertTriangle size={48} className="mx-auto mb-4 text-yellow-500" />
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Токен не настроен</h2>
@@ -88,8 +88,8 @@ export default function MailingStatisticsPage() {
   return (
     <>
       <Header title="Статистика рассылок" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6">
           <button onClick={() => fetchStats()} className="btn-secondary flex items-center gap-2">
             <RefreshCw size={16} /> Обновить
           </button>
@@ -109,33 +109,33 @@ export default function MailingStatisticsPage() {
           <>
             {/* Total Stats */}
             {totalStats && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="card p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="card p-4 sm:p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/20">
                       <Radio size={20} className="text-primary-600" />
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">Рассылок</span>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{totalStats.sendingProjects}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{totalStats.sendingProjects}</p>
                 </div>
-                <div className="card p-6">
+                <div className="card p-4 sm:p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                       <Users size={20} className="text-blue-600" />
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">Получателей</span>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{totalStats.recipients}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{totalStats.recipients}</p>
                 </div>
-                <div className="card p-6">
+                <div className="card p-4 sm:p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20">
                       <Send size={20} className="text-green-600" />
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">Отправлено</span>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{totalStats.sendedMessages}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{totalStats.sendedMessages}</p>
                 </div>
               </div>
             )}

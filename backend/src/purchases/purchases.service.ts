@@ -16,6 +16,7 @@ import { WebSearchResultEmail } from './entities/web-search-result-email.entity'
 import { ParsedEmail } from './entities/parsed-email.entity';
 import { EmailBlacklist } from './entities/email-blacklist.entity';
 import { SearchPurchasesDto } from './dto/search-purchases.dto';
+import { callAiApi } from '../common/ai-api.util';
 
 @Injectable()
 export class PurchasesService {
@@ -267,12 +268,19 @@ export class PurchasesService {
     const [data, total] = await this.foundPurchaseRepository.findAndCount({
       where: { userId },
       relations: ['purchase', 'purchase.files', 'searchQuery'],
-      order: { createdAt: 'DESC' },
+      order: {
+        lastActivityAt: { direction: 'DESC', nulls: 'LAST' },
+        createdAt: 'DESC',
+      },
       skip,
       take: limit,
     });
 
     return { data: await this.enrichWithAiStatus(data, userId), total };
+  }
+
+  private async touchFoundPurchase(purchaseId: string, userId: string): Promise<void> {
+    await this.foundPurchaseRepository.update({ purchaseId, userId }, { lastActivityAt: new Date() });
   }
 
   // --- Favorites ---
@@ -286,8 +294,11 @@ export class PurchasesService {
 
     const [data, total] = await this.foundPurchaseRepository.findAndCount({
       where: { userId, isFavorite: true },
-      relations: ['purchase', 'purchase.files'],
-      order: { createdAt: 'DESC' },
+      relations: ['purchase', 'purchase.files', 'searchQuery'],
+      order: {
+        lastActivityAt: { direction: 'DESC', nulls: 'LAST' },
+        createdAt: 'DESC',
+      },
       skip,
       take: limit,
     });
@@ -537,7 +548,7 @@ export class PurchasesService {
 
   async parseAndSaveFileText(
     fileId: string,
-    user: { settings?: { parserDocsUrl?: string; proxyUrl?: string } | null },
+    user: { id?: string; settings?: { parserDocsUrl?: string; proxyUrl?: string } | null },
   ): Promise<PurchaseFile> {
     const file = await this.purchaseFileRepository.findOne({
       where: { id: fileId },
@@ -571,6 +582,10 @@ export class PurchasesService {
       const data = await response.json();
       file.parsedText = data.text || null;
       await this.purchaseFileRepository.save(file);
+
+      if (user.id) {
+        await this.touchFoundPurchase(file.purchaseId, user.id).catch(() => {});
+      }
 
       return file;
     } catch (error) {
@@ -633,19 +648,8 @@ export class PurchasesService {
 
     let aiResponse: any;
     try {
-      const response = await fetch(aiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: data }),
-        signal: AbortSignal.timeout(120000),
-      });
-
-      if (!response.ok) {
-        throw new Error(`AI API returned status ${response.status}`);
-      }
-
-      aiResponse = await response.json();
-    } catch (error) {
+      aiResponse = await callAiApi(aiUrl, data);
+    } catch (error: any) {
       this.logger.error(`Failed to call AI API: ${error.message}`);
       throw new BadRequestException(`Ошибка AI API: ${error.message}`);
     }
@@ -719,6 +723,8 @@ export class PurchasesService {
       where: { id: aiResult.id },
       relations: ['searchTerm'],
     });
+
+    await this.touchFoundPurchase(purchaseId, user.id).catch(() => {});
 
     return reloaded!;
   }
@@ -908,6 +914,14 @@ export class PurchasesService {
         });
       }
 
+      // Touch found purchases linked to this search term
+      const atpLinks = await this.aiSearchTermPurchaseRepository.find({
+        where: { searchTermId: term.id, userId: user.id },
+      });
+      for (const atp of atpLinks) {
+        await this.touchFoundPurchase(atp.purchaseId, user.id).catch(() => {});
+      }
+
       return results;
     } catch (error) {
       this.logger.error(`Web search failed: ${error.message}`);
@@ -1016,6 +1030,19 @@ export class PurchasesService {
       }
 
       savedEmails.push(emailStr);
+    }
+
+    // Touch found purchases linked to web result's search terms
+    const wsrtLinks = await this.webSearchResultSearchTermRepository.find({
+      where: { webSearchResultId },
+    });
+    for (const wsrt of wsrtLinks) {
+      const atpLinks = await this.aiSearchTermPurchaseRepository.find({
+        where: { searchTermId: wsrt.searchTermId, userId },
+      });
+      for (const atp of atpLinks) {
+        await this.touchFoundPurchase(atp.purchaseId, userId).catch(() => {});
+      }
     }
 
     return { emails: savedEmails };

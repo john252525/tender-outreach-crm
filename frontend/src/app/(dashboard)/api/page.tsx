@@ -108,15 +108,15 @@ export default function ApiPage() {
       </div>
 
       {/* API Keys Management */}
-      <div className="bg-card border border-card-border rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-card border border-card-border rounded-xl p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Key size={20} className="text-blue-500" />
             <h2 className="text-lg font-semibold text-card-foreground">API Ключи</h2>
           </div>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors w-full sm:w-auto justify-center"
           >
             <Plus size={16} />
             Создать ключ
@@ -132,7 +132,7 @@ export default function ApiPage() {
                 <p className="text-sm font-medium text-yellow-500 mb-1">
                   Сохраните ключ — он больше не будет показан!
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <code className="text-xs bg-black/20 px-3 py-1.5 rounded font-mono text-card-foreground break-all">
                     {newlyCreatedKey}
                   </code>
@@ -179,7 +179,7 @@ export default function ApiPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleCreate}
                 disabled={!newKeyName.trim() || creating}
@@ -211,7 +211,7 @@ export default function ApiPage() {
             {keys.map((key) => (
               <div
                 key={key.id}
-                className="flex items-center justify-between p-3 bg-input-bg border border-card-border rounded-lg"
+                className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-input-bg border border-card-border rounded-lg"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function ApiPage() {
                       {key.isActive ? 'Активен' : 'Отключён'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
                     <code className="text-xs text-secondary font-mono">{key.keyPrefix}...****</code>
                     {key.lastUsedAt && (
                       <span className="text-xs text-secondary flex items-center gap-1">
@@ -262,7 +262,7 @@ export default function ApiPage() {
       </div>
 
       {/* API Documentation */}
-      <div className="bg-card border border-card-border rounded-xl p-6">
+      <div className="bg-card border border-card-border rounded-xl p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-card-foreground mb-4">Документация API</h2>
         <p className="text-sm text-secondary mb-4">
           Все запросы к API Outreach требуют авторизации через API ключ в заголовке <code className="bg-input-bg px-1.5 py-0.5 rounded text-xs">Authorization</code>.
@@ -593,13 +593,13 @@ function DocSection({
     <div className="border-b border-card-border last:border-b-0">
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 w-full py-3 text-left text-sm font-medium text-card-foreground hover:text-blue-400 transition-colors"
+        className="flex items-center gap-2 w-full py-3 text-left text-sm font-medium text-card-foreground hover:text-blue-400 transition-colors break-words"
       >
         {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         {title}
       </button>
       {expanded && (
-        <div className="pb-4 pl-6">
+        <div className="pb-4 pl-0 sm:pl-6">
           {children}
         </div>
       )}
@@ -616,7 +616,7 @@ function Endpoint({ method, path, desc }: { method: string; path: string; desc: 
   };
 
   return (
-    <div className="flex items-start gap-2 mt-3 mb-1">
+    <div className="flex flex-col sm:flex-row sm:items-start gap-2 mt-3 mb-1">
       <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${methodColors[method] || 'bg-gray-500/20 text-gray-400'}`}>
         {method}
       </span>

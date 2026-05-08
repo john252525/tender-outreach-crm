@@ -20,7 +20,7 @@ import {
   Menu,
   X,
   FolderSearch,
-  Clock,
+  Star,
   Ban,
   Inbox,
   MessageCircle,
@@ -63,9 +63,9 @@ const navItems: NavItem[] = [
         roles: ALL_ROLES,
       },
       {
-        label: 'История',
-        href: '/purchases/history',
-        icon: <Clock size={16} />,
+        label: 'Избранное',
+        href: '/purchases/favorites',
+        icon: <Star size={16} />,
         roles: ALL_ROLES,
       },
       {

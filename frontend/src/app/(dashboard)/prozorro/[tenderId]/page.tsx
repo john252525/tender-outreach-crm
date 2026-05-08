@@ -111,7 +111,7 @@ export default function ProzorroTenderPage() {
     return (
       <>
         <Header title="Тендер" user={user} />
-        <div className="p-6 flex justify-center py-20">
+        <div className="p-3 sm:p-6 flex justify-center py-20">
           <Loader2 size={32} className="animate-spin text-gray-400" />
         </div>
       </>
@@ -122,7 +122,7 @@ export default function ProzorroTenderPage() {
     return (
       <>
         <Header title="Тендер" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-lg">
             {error || 'Тендер не найден'}
           </div>
@@ -136,7 +136,7 @@ export default function ProzorroTenderPage() {
   return (
     <>
       <Header title={tender.tenderNumber} user={user} />
-      <div className="p-6 max-w-4xl">
+      <div className="p-3 sm:p-6 max-w-4xl">
         <Link href="/prozorro" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4">
           <ArrowLeft size={14} /> Назад к поиску
         </Link>
@@ -163,7 +163,7 @@ export default function ProzorroTenderPage() {
           {tender.description && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{tender.description}</p>
           )}
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500 dark:text-gray-400">Сумма:</span>{' '}
               <span className="font-semibold">{formatPrice(tender.amount, tender.currency)}</span>
@@ -219,7 +219,7 @@ export default function ProzorroTenderPage() {
             <div className="space-y-2">
               {tender.docs.map((doc) => (
                 <div key={doc.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <FileText size={16} className="text-gray-400 flex-shrink-0" />
                       <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{doc.title}</span>
@@ -268,7 +268,7 @@ export default function ProzorroTenderPage() {
 
         {/* AI Analysis */}
         <div className="card mb-6">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI-анализ</h3>
             <button
               onClick={handleAiPrepare}
@@ -285,7 +285,7 @@ export default function ProzorroTenderPage() {
               {aiResult.searchQuery && (
                 <div>
                   <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Поисковый запрос:</label>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
                     <code className="flex-1 text-sm bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded">
                       {aiResult.searchQuery}
                     </code>

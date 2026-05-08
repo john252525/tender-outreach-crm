@@ -151,6 +151,26 @@ function SectionTitle({ children, icon }: { children: React.ReactNode; icon: Rea
   );
 }
 
+function formatRecentSearchLabel(queryParams: Record<string, unknown>): string {
+  const objectInfo = queryParams.objectInfo || queryParams.searchString || queryParams.query;
+  if (typeof objectInfo === 'string' && objectInfo.trim()) {
+    return objectInfo.trim();
+  }
+
+  const parts: string[] = [];
+  if (typeof queryParams.purchaseNumber === 'string' && queryParams.purchaseNumber.trim()) {
+    parts.push(`№${queryParams.purchaseNumber.trim()}`);
+  }
+  if (queryParams.stage != null) {
+    parts.push(`Этап: ${String(queryParams.stage)}`);
+  }
+  if (queryParams.region != null && String(queryParams.region).trim()) {
+    parts.push(`Регион: ${String(queryParams.region).trim()}`);
+  }
+
+  return parts.join(' • ') || 'Поисковый запрос';
+}
+
 function AdminDashboard() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -256,7 +276,7 @@ function AdminDashboard() {
         {/* Prozorro */}
         <div className="card">
           <SectionTitle icon={<Globe2 size={20} />}>Закупки Украина (Prozorro)</SectionTitle>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{data.prozorro.totalTenders}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Тендеров</p>
@@ -277,7 +297,7 @@ function AdminDashboard() {
         {/* Outreach Summary */}
         <div className="card">
           <SectionTitle icon={<Rocket size={20} />}>Email Outreach</SectionTitle>
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div className="flex items-center gap-3">
               <MailPlus size={18} className="text-blue-500 flex-shrink-0" />
               <div>
@@ -324,7 +344,7 @@ function AdminDashboard() {
       {data.outreach.totalEmailsSent > 0 && (
         <div className="card">
           <SectionTitle icon={<TrendingUp size={20} />}>Воронка рассылок</SectionTitle>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
@@ -381,7 +401,7 @@ function AdminDashboard() {
                   {ROLE_LABELS[role as Role] || role}
                 </span>
                 <div className="flex items-center gap-3">
-                  <div className="w-32">
+                  <div className="w-20 sm:w-32">
                     <ProgressBar value={count} max={data.users.total} color="bg-primary-500" />
                   </div>
                   <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 w-8 text-right">
@@ -395,7 +415,7 @@ function AdminDashboard() {
 
         {/* Recent Users */}
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <SectionTitle icon={<Clock size={20} />}>Новые пользователи</SectionTitle>
             <Link
               href="/admin/users"
@@ -458,8 +478,8 @@ function UserDashboard() {
     <div className="space-y-8">
       {/* Welcome */}
       <div className="card bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-700 dark:to-primary-900 text-white">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-xl font-bold">
               Добро пожаловать, {user.firstName}!
             </h2>
@@ -603,17 +623,21 @@ function UserDashboard() {
           ) : (
             <div className="space-y-3">
               {data.recentSearches.map((s) => {
-                const params = s.queryParams as Record<string, string>;
-                const label = params.searchString || params.query || JSON.stringify(params).slice(0, 60);
+                const params = s.queryParams as Record<string, unknown>;
+                const label = formatRecentSearchLabel(params);
                 return (
-                  <div key={s.id} className="flex items-center gap-3">
+                  <div key={s.id} className="rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-700/30 px-3 py-3">
+                    <div className="flex items-start gap-3">
                     <Search size={16} className="text-gray-400 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{label}</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 break-words">
+                        {label}
+                      </p>
                       <p className="text-xs text-gray-400">
                         {s.resultsCount} результатов &bull;{' '}
                         {new Date(s.createdAt).toLocaleDateString('ru-RU')}
                       </p>
+                    </div>
                     </div>
                   </div>
                 );
@@ -636,7 +660,7 @@ export default function DashboardPage() {
   return (
     <>
       <Header title="Дашборд" user={user} />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {isAdmin ? <AdminDashboard /> : <UserDashboard />}
       </div>
     </>

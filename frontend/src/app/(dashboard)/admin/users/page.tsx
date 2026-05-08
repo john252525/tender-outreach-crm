@@ -55,8 +55,8 @@ function CreateUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2 mb-4">
           <h3 className="text-lg font-semibold dark:text-gray-100">Новый пользователь</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <X size={20} />
@@ -70,7 +70,7 @@ function CreateUserModal({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Имя"
@@ -171,8 +171,8 @@ function EditUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2 mb-4">
           <h3 className="text-lg font-semibold dark:text-gray-100">Редактировать пользователя</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
             <X size={20} />
@@ -186,7 +186,7 @@ function EditUserModal({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Имя"
@@ -296,8 +296,8 @@ export default function AdminUsersPage() {
   return (
     <>
       <Header title="Управление пользователями" user={user} />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Всего: <span className="font-medium text-gray-700 dark:text-gray-300">{total}</span>
           </p>
@@ -395,9 +395,9 @@ export default function AdminUsersPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Страница {page} из {totalPages}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                {page} / {totalPages}
               </p>
               <div className="flex gap-2">
                 <button

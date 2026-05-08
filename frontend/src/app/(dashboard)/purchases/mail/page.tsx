@@ -130,7 +130,7 @@ export default function MailPage() {
     return (
       <>
         <Header title="Почта" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <button
             onClick={() => setActiveThread(null)}
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors mb-4"
@@ -139,9 +139,9 @@ export default function MailPage() {
             Назад к списку
           </button>
 
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-6">
             <Mail size={18} className="text-primary-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 break-all">
               {activeThread}
             </h2>
           </div>
@@ -158,8 +158,8 @@ export default function MailPage() {
                     key={msg.id}
                     className={`card py-3 ${
                       msg.direction === 'sent'
-                        ? 'ml-8 border-l-4 border-l-blue-400'
-                        : 'mr-8 border-l-4 border-l-emerald-400'
+                        ? 'sm:ml-8 border-l-4 border-l-blue-400'
+                        : 'sm:mr-8 border-l-4 border-l-emerald-400'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -254,8 +254,8 @@ export default function MailPage() {
   return (
     <>
       <Header title="Почта" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
           <Link
             href="/purchases"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
@@ -266,7 +266,7 @@ export default function MailPage() {
           <button
             onClick={handleFetchInbox}
             disabled={fetchingInbox}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors disabled:opacity-50 ml-auto"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors disabled:opacity-50 sm:ml-auto"
           >
             {fetchingInbox ? (
               <Loader2 size={14} className="animate-spin" />
@@ -354,8 +354,8 @@ export default function MailPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-6">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Стр. {page} / {totalPages}
                 </p>
                 <div className="flex items-center gap-2">

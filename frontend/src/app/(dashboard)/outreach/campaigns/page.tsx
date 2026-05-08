@@ -264,12 +264,12 @@ export default function CampaignsPage() {
   return (
     <>
       <Header title="Кампании рассылок" user={user} />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
           <Link href="/outreach" className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">
             <ArrowLeft size={16} /> Назад
           </Link>
-          <button onClick={() => setShowCreate(!showCreate)} className="btn-primary flex items-center gap-2">
+          <button onClick={() => setShowCreate(!showCreate)} className="btn-primary flex w-full sm:w-auto items-center justify-center gap-2">
             <Plus size={16} /> Новая кампания
           </button>
         </div>
@@ -278,7 +278,7 @@ export default function CampaignsPage() {
         {showCreate && (
           <form onSubmit={handleCreate} className="card mb-6">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Новая кампания</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Название *</label>
                 <input type="text" required value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} className="input-field" placeholder="Первая рассылка" />
@@ -296,7 +296,7 @@ export default function CampaignsPage() {
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Дневной лимит</label>
                 <input type="number" value={createForm.dailySendLimit} onChange={(e) => setCreateForm((p) => ({ ...p, dailySendLimit: e.target.value }))} className="input-field" />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Отправлять с</label>
                   <input type="number" min="0" max="23" value={createForm.sendFromHour} onChange={(e) => setCreateForm((p) => ({ ...p, sendFromHour: e.target.value }))} className="input-field" />
@@ -326,12 +326,12 @@ export default function CampaignsPage() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+              <button type="submit" disabled={saving} className="btn-primary flex items-center justify-center gap-2">
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 Создать
               </button>
-              <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Отмена</button>
+              <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary justify-center">Отмена</button>
             </div>
           </form>
         )}
@@ -355,17 +355,17 @@ export default function CampaignsPage() {
               const status = STATUS_LABELS[campaign.status] || STATUS_LABELS.draft;
               return (
                 <div key={campaign.id} className="card">
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div
-                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      className="flex flex-wrap items-start gap-3 flex-1 min-w-0 cursor-pointer"
                       onClick={() => handleExpand(campaign.id)}
                     >
                       <Zap size={18} className="text-amber-500 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
                           {campaign.name}
                         </p>
-                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           <span>{campaign.steps?.length || 0} шагов</span>
                           <span className="flex items-center gap-1"><Send size={10} /> {campaign.statsSent}</span>
                           <span className="flex items-center gap-1"><MessageSquare size={10} /> {campaign.statsReplied}</span>
@@ -376,10 +376,10 @@ export default function CampaignsPage() {
                       </span>
                       {expandedId === campaign.id ? <ChevronUp size={16} className="text-gray-400 shrink-0" /> : <ChevronDown size={16} className="text-gray-400 shrink-0" />}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex flex-wrap items-center gap-1.5 shrink-0 w-full sm:w-auto sm:justify-end">
                       {campaign.status === 'draft' && (
                         <button onClick={() => handleLaunch(campaign.id)} disabled={launchingId === campaign.id}
-                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
+                          className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
                         >
                           {launchingId === campaign.id ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
                           Запустить
@@ -388,7 +388,7 @@ export default function CampaignsPage() {
                       {campaign.status === 'active' && (
                         <>
                           <button onClick={() => handleSend(campaign.id)} disabled={sendingId === campaign.id}
-                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 transition-colors disabled:opacity-50"
+                            className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 transition-colors disabled:opacity-50"
                           >
                             {sendingId === campaign.id ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
                             Отправить
@@ -444,7 +444,7 @@ export default function CampaignsPage() {
                         )}
                       </div>
                       {/* Stats */}
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                           <Send size={14} className="text-blue-600" />
                           <div>
@@ -477,13 +477,13 @@ export default function CampaignsPage() {
 
                       {/* Steps Editor */}
                       <div>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                           <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Цепочка писем</h4>
-                          <div className="flex gap-2">
-                            <button onClick={addStep} className="btn-secondary !py-1 !px-2 text-xs flex items-center gap-1">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <button onClick={addStep} className="btn-secondary !py-1 !px-2 text-xs flex items-center justify-center gap-1">
                               <Plus size={12} /> Шаг
                             </button>
-                            <button onClick={() => handleSaveSteps(campaign.id)} disabled={saving} className="btn-primary !py-1 !px-3 text-xs flex items-center gap-1">
+                            <button onClick={() => handleSaveSteps(campaign.id)} disabled={saving} className="btn-primary !py-1 !px-3 text-xs flex items-center justify-center gap-1">
                               {saving ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
                               Сохранить
                             </button>
@@ -492,7 +492,7 @@ export default function CampaignsPage() {
                         <div className="space-y-3">
                           {stepsForm.map((step, idx) => (
                             <div key={idx} className="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                              <div className="flex items-center justify-between mb-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                                 <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
                                   Шаг {idx + 1}
                                   {idx > 0 && ` (через ${step.delayDays}д ${step.delayHours}ч)`}
@@ -504,7 +504,7 @@ export default function CampaignsPage() {
                                 )}
                               </div>
                               {idx > 0 && (
-                                <div className="flex gap-2 mb-2">
+                                <div className="flex flex-col sm:flex-row gap-2 mb-2">
                                   <div className="flex-1">
                                     <label className="block text-xs text-gray-500 mb-1">Задержка (дней)</label>
                                     <input type="number" min="0" value={step.delayDays} onChange={(e) => updateStep(idx, 'delayDays', e.target.value)} className="input-field text-xs" />
@@ -548,12 +548,12 @@ export default function CampaignsPage() {
                                 ? 'Ещё не отправлено'
                                 : `Письмо ${cl.currentStep} из ${total}`;
                               return (
-                                <div key={cl.id} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 text-xs">
-                                  <span className="text-gray-900 dark:text-gray-100 truncate">
+                                <div key={cl.id} className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 text-xs">
+                                  <span className="text-gray-900 dark:text-gray-100 break-all">
                                     {cl.lead?.email || cl.leadId}
                                   </span>
                                   <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-gray-400">{stepLabel}</span>
+                                    <span className="hidden sm:inline text-gray-400">{stepLabel}</span>
                                     <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium ${cfg.color}`}>
                                       {cfg.icon}
                                       {cfg.label}

@@ -114,7 +114,7 @@ export default function PurchaseHistoryPage() {
   return (
     <>
       <Header title="История просмотров" user={user} />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         <Link
           href="/purchases"
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors mb-6"
@@ -193,10 +193,10 @@ export default function PurchaseHistoryPage() {
                               {item.purchase.objectInfo || '—'}
                             </p>
                           </div>
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap shrink-0">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 sm:whitespace-nowrap shrink-0">
                             {formatPrice(item.purchase.maxPrice, item.purchase.currencyCode)}
                           </p>
-                          <p className="text-xs text-gray-400 whitespace-nowrap shrink-0">
+                          <p className="text-xs text-gray-400 sm:whitespace-nowrap shrink-0">
                             {formatDateTime(item.foundAt)}
                           </p>
                           <button

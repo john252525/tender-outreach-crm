@@ -103,7 +103,7 @@ export default function PipelineStatusBar(props: PipelineStatusBarProps) {
 
   return (
     <>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {STAGE_CONFIG.map(({ key, icon: Icon, label }, idx) => {
           const complete = isStageComplete(key, props);
           const text = getBadgeText(key, props);
@@ -128,15 +128,15 @@ export default function PipelineStatusBar(props: PipelineStatusBarProps) {
       {/* Modal */}
       {openStage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3"
           onClick={closeModal}
         >
           <div
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-[min(42rem,calc(100vw-1.5rem))] max-h-[90dvh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex flex-wrap items-center gap-2 max-w-full">
                 {/* Stage tabs */}
                 {STAGE_CONFIG.map(({ key, icon: Icon, label }) => (
                   <button
@@ -155,13 +155,13 @@ export default function PipelineStatusBar(props: PipelineStatusBarProps) {
               </div>
               <button
                 onClick={closeModal}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="self-end sm:self-start p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
               {loadingDetail ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 size={24} className="animate-spin text-primary-600" />
@@ -217,7 +217,7 @@ function DocsContent({ detail }: { detail: PipelineDetail }) {
           {docs.files.map((f) => (
             <div
               key={f.id}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+              className={`flex items-start gap-3 px-3 py-2 rounded-lg text-sm ${
                 f.parsed
                   ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300'
                   : 'bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400'
@@ -228,7 +228,7 @@ function DocsContent({ detail }: { detail: PipelineDetail }) {
               ) : (
                 <Circle size={14} className="text-gray-300 dark:text-gray-600 shrink-0" />
               )}
-              <span className="truncate">{f.fileName || f.docDescription || 'Без названия'}</span>
+              <span className="break-words">{f.fileName || f.docDescription || 'Без названия'}</span>
             </div>
           ))}
         </div>
@@ -252,7 +252,7 @@ function AiContent({ detail }: { detail: PipelineDetail }) {
       {ai.searchTerm && (
         <div>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Поисковый запрос</p>
-          <p className="text-sm bg-violet-50 dark:bg-violet-900/20 text-violet-800 dark:text-violet-300 px-3 py-2 rounded-lg">
+          <p className="text-sm break-words bg-violet-50 dark:bg-violet-900/20 text-violet-800 dark:text-violet-300 px-3 py-2 rounded-lg">
             {ai.searchTerm}
           </p>
         </div>
@@ -260,7 +260,7 @@ function AiContent({ detail }: { detail: PipelineDetail }) {
       {ai.subject && (
         <div>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Тема письма</p>
-          <p className="text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-3 py-2 rounded-lg">
+          <p className="text-sm break-words bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-3 py-2 rounded-lg">
             {ai.subject}
           </p>
         </div>
@@ -268,7 +268,7 @@ function AiContent({ detail }: { detail: PipelineDetail }) {
       {ai.body && (
         <div>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Тело письма</p>
-          <p className="text-sm bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg whitespace-pre-wrap max-h-48 overflow-y-auto">
+          <p className="text-sm break-words bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg whitespace-pre-wrap max-h-48 overflow-y-auto">
             {ai.body}
           </p>
         </div>
@@ -296,7 +296,7 @@ function SitesContent({ detail }: { detail: PipelineDetail }) {
         {sites.items.map((s) => (
           <div
             key={s.id}
-            className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-sm"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-sm"
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <Globe size={14} className="text-blue-500 shrink-0" />
@@ -304,7 +304,7 @@ function SitesContent({ detail }: { detail: PipelineDetail }) {
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:underline truncate"
+                className="text-blue-600 dark:text-blue-400 hover:underline break-all"
               >
                 {s.title || s.url}
               </a>
@@ -342,7 +342,7 @@ function EmailsContent({ detail }: { detail: PipelineDetail }) {
           <a
             key={email}
             href={`mailto:${email}`}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors break-all"
           >
             <AtSign size={10} />
             {email}
@@ -381,11 +381,11 @@ function LettersContent({ detail }: { detail: PipelineDetail }) {
       <div className="space-y-2 mb-4">
         <div>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Тема</p>
-          <p className="text-sm text-gray-900 dark:text-gray-100">{subject}</p>
+          <p className="text-sm text-gray-900 dark:text-gray-100 break-words">{subject}</p>
         </div>
         <div>
           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Текст</p>
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-32 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
+          <p className="text-sm break-words text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-32 overflow-y-auto bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
             {body}
           </p>
         </div>
@@ -396,7 +396,7 @@ function LettersContent({ detail }: { detail: PipelineDetail }) {
           <a
             key={email}
             href={`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors break-all"
           >
             <Mail size={10} />
             {email}

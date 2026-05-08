@@ -80,8 +80,8 @@ export default function BlacklistPage() {
   return (
     <>
       <Header title="Чёрный список" user={user} />
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
           <Link
             href="/purchases"
             className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
@@ -95,7 +95,7 @@ export default function BlacklistPage() {
         </div>
 
         {/* Add form */}
-        <form onSubmit={handleAdd} className="flex items-center gap-2 mb-6">
+        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-6">
           <input
             type="email"
             value={newEmail}
@@ -130,13 +130,13 @@ export default function BlacklistPage() {
             <div className="space-y-2">
               {data.map((entry) => (
                 <div key={entry.id} className="card py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
                       <Ban size={14} className="text-red-400 shrink-0" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 break-all">
                         {entry.email}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 sm:shrink-0">
                         {new Date(entry.createdAt).toLocaleDateString('ru-RU')}
                       </span>
                     </div>
@@ -158,11 +158,11 @@ export default function BlacklistPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-4 sm:mt-6">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Стр. {page} / {totalPages}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}

@@ -100,7 +100,7 @@ export default function MailingBlockedPage() {
     return (
       <>
         <Header title="Чёрный список" user={user} />
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="card p-8 text-center">
             <AlertTriangle size={48} className="mx-auto mb-4 text-yellow-500" />
             <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Токен не настроен</h2>
@@ -117,8 +117,8 @@ export default function MailingBlockedPage() {
   return (
     <>
       <Header title="Чёрный список" user={user} />
-      <div className="p-6">
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -197,10 +197,10 @@ export default function MailingBlockedPage() {
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowAdd(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Добавить в чёрный список</h2>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Номера телефонов
               </label>
@@ -211,7 +211,7 @@ export default function MailingBlockedPage() {
                 className="input-field w-full h-40 resize-y"
               />
             </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-end gap-3">
               <button onClick={() => setShowAdd(false)} className="btn-secondary">Отмена</button>
               <button
                 onClick={handleAdd}

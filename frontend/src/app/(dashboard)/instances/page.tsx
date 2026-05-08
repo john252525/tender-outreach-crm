@@ -396,7 +396,7 @@ export default function InstancesPage() {
   return (
     <>
       <Header title="Инстансы" user={user} />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {!hasToken ? (
           <div className="card text-center py-12">
             <AlertCircle size={48} className="mx-auto text-amber-400 mb-4" />
@@ -465,10 +465,10 @@ export default function InstancesPage() {
             ) : (
               <>
                 {/* Summary + Actions */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                   <div className="flex items-center gap-4">
                     {currentSummary && (
-                      <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                         <span>
                           Всего:{' '}
                           <span className="font-medium text-gray-900 dark:text-gray-100">
@@ -492,7 +492,7 @@ export default function InstancesPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={fetchAll}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -531,8 +531,8 @@ export default function InstancesPage() {
                       const srcColor = SOURCE_COLORS[client.source] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
                       return (
                         <div key={client._id} className="card hover:shadow-md transition-shadow">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1 w-full">
                               {/* Status indicator */}
                               <div
                                 className={`w-3 h-3 rounded-full shrink-0 ${
@@ -595,7 +595,7 @@ export default function InstancesPage() {
                                     {client.login}
                                   </p>
                                 )}
-                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
                                   <span>
                                     Статус:{' '}
                                     <span
@@ -624,7 +624,7 @@ export default function InstancesPage() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                               {/* Screenshot (small icon, only online) */}
                               {client.state && (
                                 <button
@@ -713,7 +713,7 @@ export default function InstancesPage() {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 Новый инстанс
               </h3>
@@ -724,7 +724,7 @@ export default function InstancesPage() {
                 <X size={18} />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Source
@@ -741,7 +741,7 @@ export default function InstancesPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-wrap justify-end gap-2 pt-2">
                 <button
                   onClick={() => setAddModalOpen(false)}
                   className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
@@ -776,7 +776,7 @@ export default function InstancesPage() {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5">
+            <div className="p-4 sm:p-5">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 Удалить инстанс{names[confirmDelete] ? ` «${names[confirmDelete]}»` : ''}?
               </h3>
@@ -786,7 +786,7 @@ export default function InstancesPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
                 Инстанс будет остановлен и удалён. Это действие нельзя отменить.
               </p>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
                 <button
                   onClick={() => setConfirmDelete(null)}
                   disabled={!!deletingLogin}
@@ -822,7 +822,7 @@ export default function InstancesPage() {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {imageModal.title}{names[imageModal.login] ? ` — ${names[imageModal.login]}` : ''}
@@ -838,7 +838,7 @@ export default function InstancesPage() {
                 <X size={18} />
               </button>
             </div>
-            <div className="p-5">
+            <div className="p-4 sm:p-5">
               {imageModal.loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 size={32} className="animate-spin text-primary-600" />
@@ -860,7 +860,7 @@ export default function InstancesPage() {
                   </p>
                 </div>
               )}
-              <div className="flex justify-end gap-2 mt-4">
+              <div className="flex flex-wrap justify-end gap-2 mt-4">
                 {!imageModal.loading && (
                   <button
                     onClick={() => {
