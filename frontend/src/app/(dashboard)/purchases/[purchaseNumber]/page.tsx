@@ -22,6 +22,7 @@ import {
   Mail,
   MessageSquare,
   Wand2,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -82,6 +83,7 @@ export default function PurchaseDetailPage() {
   const [previewingFileId, setPreviewingFileId] = useState<string | null>(null);
   const [viewingFile, setViewingFile] = useState<PurchaseFile | null>(null);
   const [aiResult, setAiResult] = useState<PurchaseAiResult | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [approving, setApproving] = useState(false);
   const [approveResult, setApproveResult] = useState<{ campaignId: string } | null>(null);
@@ -123,6 +125,14 @@ export default function PurchaseDetailPage() {
     } finally {
       setSavingFileId(null);
     }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!purchase) return;
+    try {
+      const res = await api.post<{ isFavorite: boolean }>(`/purchases/favorites/${purchase.id}`, {});
+      setIsFavorite(res.isFavorite);
+    } catch { /* ignore */ }
   };
 
   const handlePrepare = async () => {
@@ -206,9 +216,18 @@ export default function PurchaseDetailPage() {
             <div className="card">
               <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4 mb-4">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    № {purchase.purchaseNumber}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      № {purchase.purchaseNumber}
+                    </h3>
+                    <button
+                      onClick={handleToggleFavorite}
+                      className={`p-1 rounded-md transition-colors shrink-0 ${isFavorite ? 'text-amber-500 hover:text-amber-600' : 'text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-400'}`}
+                      title={isFavorite ? 'Убрать из избранного' : 'В избранное'}
+                    >
+                      <Star size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
                   {purchase.stage !== null && (
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${

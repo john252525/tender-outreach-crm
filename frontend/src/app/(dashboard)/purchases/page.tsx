@@ -14,6 +14,7 @@ import {
   FileText,
   FolderSearch,
   X,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 import MagicButtonCompact from '@/components/magic-button-compact';
@@ -87,6 +88,7 @@ function PurchasesContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [pipelineCounts, setPipelineCounts] = useState<Record<string, any>>({});
   const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
 
   const [form, setForm] = useState({
     objectInfo: searchParams.get('objectInfo') || '',
@@ -221,6 +223,17 @@ function PurchasesContent() {
         .catch(() => {});
     }
   }, [results]);
+
+  const toggleFavorite = useCallback(async (purchaseId: string) => {
+    try {
+      const res = await api.post<{ isFavorite: boolean }>(`/purchases/favorites/${purchaseId}`, {});
+      setFavoritedIds((prev) => {
+        const next = new Set(prev);
+        if (res.isFavorite) next.add(purchaseId); else next.delete(purchaseId);
+        return next;
+      });
+    } catch { /* ignore */ }
+  }, []);
 
   const handleApprove = useCallback(async (purchaseId: string, data: { emails: string[]; subject: string; body: string }) => {
     try {
@@ -414,9 +427,17 @@ function PurchasesContent() {
                       <div className="flex flex-wrap items-stretch sm:items-center gap-1.5 sm:gap-2 sm:justify-end">
                       <MagicButtonCompact
                         purchaseId={purchase.id}
+                        purchase={purchase}
                         onComplete={refreshPipelineCounts}
                         onApprove={(data) => handleApprove(purchase.id, data)}
                       />
+                        <button
+                          onClick={() => toggleFavorite(purchase.id)}
+                          className={`p-1.5 rounded-md transition-colors ${favoritedIds.has(purchase.id) ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`}
+                          title={favoritedIds.has(purchase.id) ? 'Убрать из избранного' : 'В избранное'}
+                        >
+                          <Star size={15} fill={favoritedIds.has(purchase.id) ? 'currentColor' : 'none'} />
+                        </button>
                         <Link
                           href={`/purchases/${purchase.purchaseNumber}`}
                           className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-md transition-colors"

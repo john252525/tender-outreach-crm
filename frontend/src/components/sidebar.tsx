@@ -162,8 +162,8 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-5 border-b border-white/10">
-        <h1 className="text-lg font-bold text-white">Панель управления</h1>
+      <div className="px-6 py-5 border-b border-gray-200 dark:border-white/10">
+        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Панель управления</h1>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -180,7 +180,7 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150',
                   isActive
                     ? 'bg-sidebar-active text-white'
-                    : 'text-gray-300 hover:bg-sidebar-hover hover:text-white',
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-sidebar-hover hover:text-gray-900 dark:hover:text-white',
                 )}
               >
                 {item.icon}
@@ -192,7 +192,7 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
                 )}
               </Link>
               {item.children && isExpanded && (
-                <div className="ml-4 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                <div className="ml-4 mt-1 space-y-0.5 border-l border-gray-200 dark:border-white/10 pl-3">
                   {item.children
                     .filter((c) => c.roles.includes(user.role))
                     .map((child) => {
@@ -206,7 +206,7 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
                             'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
                             isChildItemActive
                               ? 'bg-sidebar-active text-white'
-                              : 'text-gray-400 hover:bg-sidebar-hover hover:text-white',
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-sidebar-hover hover:text-gray-900 dark:hover:text-white',
                           )}
                         >
                           {child.icon}
@@ -222,24 +222,24 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
 
       </nav>
 
-      <div className="border-t border-white/10">
+      <div className="border-t border-gray-200 dark:border-white/10">
         <ThemeSwitcher onSettingsChange={onSettingsChange} />
       </div>
 
-      <div className="px-3 py-4 border-t border-white/10">
+      <div className="px-3 py-4 border-t border-gray-200 dark:border-white/10">
         <div className="px-3 py-2 mb-2">
-          <p className="text-sm font-medium text-white truncate">
+          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
             {user.firstName} {user.lastName}
           </p>
-          <p className="text-xs text-gray-400 truncate">{user.email}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
           <div className="flex items-center gap-1 mt-1">
-            <span className="text-gray-400">{getRoleIcon(user.role)}</span>
-            <span className="text-xs text-gray-400">{ROLE_LABELS[user.role]}</span>
+            <span className="text-gray-500 dark:text-gray-400">{getRoleIcon(user.role)}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{ROLE_LABELS[user.role]}</span>
           </div>
         </div>
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-300 hover:bg-sidebar-hover hover:text-white transition-colors duration-150"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-sidebar-hover hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
         >
           <LogOut size={20} />
           Выйти
@@ -253,7 +253,7 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-sidebar-bg rounded-lg text-white"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-white/10 rounded-lg text-gray-700 dark:text-white shadow-sm"
       >
         <Menu size={20} />
       </button>
@@ -269,7 +269,7 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
       {/* Mobile sidebar */}
       <aside
         className={clsx(
-          'lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-sidebar-bg transform transition-transform duration-200',
+          'lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-[#0f172a] border-r border-gray-200 dark:border-white/10 shadow-xl transform transition-transform duration-200',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -283,7 +283,7 @@ export default function Sidebar({ user, onLogout, onSettingsChange, messengerUnr
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-64 bg-sidebar-bg min-h-screen flex-shrink-0">
+      <aside className="hidden lg:block w-64 bg-white dark:bg-[#0f172a] border-r border-gray-200 dark:border-white/10 min-h-screen flex-shrink-0">
         {sidebarContent}
       </aside>
     </>

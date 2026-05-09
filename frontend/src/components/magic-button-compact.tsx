@@ -8,6 +8,7 @@ import { getPipeline, setPipeline, usePipeline, PipelineStep } from '@/lib/pipel
 
 interface Props {
   purchaseId: string;
+  purchase?: Purchase;
   onComplete?: () => void;
   onApprove?: (data: { emails: string[]; subject: string; body: string }) => void;
 }
@@ -22,7 +23,7 @@ const STEP_LABELS: Record<PipelineStep, string> = {
   error: 'Ошибка',
 };
 
-export default function MagicButtonCompact({ purchaseId, onComplete, onApprove }: Props) {
+export default function MagicButtonCompact({ purchaseId, purchase: purchaseProp, onComplete, onApprove }: Props) {
   // Initialize from global store so state survives navigation
   const entry = usePipeline(purchaseId);
   const running = useRef(getPipeline(purchaseId).running);
@@ -41,66 +42,28 @@ export default function MagicButtonCompact({ purchaseId, onComplete, onApprove }
     setPipeline(purchaseId, { step: 'docs', emailCount: 0, result: null, running: true });
 
     try {
-      // Load purchase with files
-      let purchase: Purchase;
-      try {
-        const found = await api.get<{ data: any[] }>(`/purchases/found?page=1&limit=200`);
-        const item = found.data.find((f: any) => f.purchaseId === purchaseId);
-        if (!item?.purchase) throw new Error('Закупка не найдена');
-        purchase = item.purchase;
-      } catch {
-        // Fallback: skip doc parsing, go straight to AI
-        syncStep('ai');
-        let aiResult: PurchaseAiResult | null = null;
+      // Resolve purchase with files
+      let purchase: Purchase | null = null;
+      if (purchaseProp?.purchaseNumber) {
+        // Fetch full purchase (with files) by purchaseNumber — search results don't include files
         try {
-          aiResult = await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
+          purchase = await api.get<Purchase>(`/purchases/${purchaseProp.purchaseNumber}`);
         } catch {
-          syncStep('error');
-          running.current = false;
-          return;
+          // fall through to found-list lookup
         }
-
-        if (aiResult?.searchTerm) {
-          syncStep('search');
-          let searchResults: WebSearchResult[] = [];
-          try {
-            searchResults = await api.post<WebSearchResult[]>(
-              `/purchases/web-search/${aiResult.searchTerm.id}`,
-              {},
-            );
-          } catch {
-            // continue
-          }
-
-          if (searchResults.length > 0) {
-            syncStep('emails');
-            const allEmails = new Set<string>();
-            for (const site of searchResults) {
-              try {
-                const res = await api.post<{ emails: string[] }>(
-                  `/purchases/web-search-results/${site.id}/parse-emails`,
-                  {},
-                );
-                for (const e of res.emails) allEmails.add(e);
-              } catch {
-                // continue
-              }
-            }
-            const emailList = Array.from(allEmails);
-            if (emailList.length > 0) {
-              syncResult(emailList, aiResult?.subject || '', aiResult?.body || '');
-            }
-          }
+      }
+      if (!purchase) {
+        try {
+          const found = await api.get<{ data: any[] }>(`/purchases/found?page=1&limit=200`);
+          const item = found.data.find((f: any) => f.purchaseId === purchaseId);
+          if (item?.purchase) purchase = item.purchase;
+        } catch {
+          // continue without purchase — doc parsing will be skipped
         }
-
-        syncStep('done');
-        running.current = false;
-        onComplete?.();
-        return;
       }
 
-      // Parse unsaved docs
-      const unsaved = (purchase.files || []).filter((f) => !f.parsedText);
+      // Parse unsaved docs (only if we have the purchase with file list)
+      const unsaved = ((purchase?.files) || []).filter((f) => !f.parsedText);
       for (const file of unsaved) {
         try {
           await api.post<PurchaseFile>(`/purchases/files/${file.id}/parse`, {});
@@ -172,8 +135,8 @@ export default function MagicButtonCompact({ purchaseId, onComplete, onApprove }
     <div className="flex max-w-full flex-col items-stretch sm:items-end gap-1">
       <button
         onClick={run}
-        disabled={isRunning}
-        className={`inline-flex max-w-full items-center justify-center gap-1 px-2 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-all disabled:cursor-wait text-center break-words ${
+        disabled={isRunning || step === 'done'}
+        className={`inline-flex max-w-full items-center justify-center gap-1 px-2 py-1 text-[11px] sm:text-xs font-medium rounded-md transition-all disabled:cursor-default text-center break-words ${
           step === 'done'
             ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30'
             : step === 'error'

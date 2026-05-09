@@ -4,20 +4,18 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
-import { FoundPurchase, PaginatedResponse, PurchaseAiResult } from '@/types';
+import { FoundPurchase, PaginatedResponse } from '@/types';
 import {
   FolderSearch,
   ArrowLeft,
   ExternalLink,
   Star,
-  Sparkles,
   Loader2,
   Trash2,
   ChevronDown,
   ChevronUp,
   Search,
   X,
-  Send,
 } from 'lucide-react';
 import Link from 'next/link';
 import MagicButtonCompact from '@/components/magic-button-compact';
@@ -84,9 +82,9 @@ export default function FoundPurchasesPage() {
   const [data, setData] = useState<FoundPurchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [preparingId, setPreparingId] = useState<string | null>(null);
   const [deletingGroup, setDeletingGroup] = useState<string | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [approvedIds, setApprovedIds] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -105,23 +103,6 @@ export default function FoundPurchasesPage() {
     fetchData();
   }, [fetchData]);
 
-  const applyAiResult = useCallback((purchaseId: string, aiResult: PurchaseAiResult) => {
-    setData((prev) =>
-      prev.map((item) =>
-        item.purchaseId === purchaseId
-          ? {
-              ...item,
-              aiResult: {
-                id: aiResult.id,
-                subject: aiResult.subject,
-                body: aiResult.body,
-                searchTerm: aiResult.searchTerm,
-              },
-            }
-          : item,
-      ),
-    );
-  }, []);
 
   const groups = useMemo<Group[]>(() => {
     const map = new Map<string, Group>();
@@ -171,19 +152,14 @@ export default function FoundPurchasesPage() {
     }
   };
 
-  const handlePrepare = useCallback(async (purchaseId: string) => {
-    if (preparingId) return;
-    setPreparingId(purchaseId);
+  const handleApprove = useCallback(async (purchaseId: string, data: { emails: string[]; subject: string; body: string }) => {
     try {
-      const result = await api.post<PurchaseAiResult>(`/purchases/${purchaseId}/prepare`, {});
-      applyAiResult(purchaseId, result);
-      fetchData();
+      await api.post(`/purchases/${purchaseId}/approve-to-outreach`, data);
+      setApprovedIds((prev) => new Set(Array.from(prev).concat(purchaseId)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Ошибка AI-анализа');
-    } finally {
-      setPreparingId(null);
+      alert(err instanceof Error ? err.message : 'Ошибка создания кампании');
     }
-  }, [preparingId, fetchData, applyAiResult]);
+  }, []);
 
   const toggleFavorite = useCallback(async (purchaseId: string) => {
     try {
@@ -326,16 +302,12 @@ export default function FoundPurchasesPage() {
                                 {formatPrice(item.purchase.maxPrice, item.purchase.currencyCode)}
                               </p>
                               <div className="flex flex-wrap items-stretch sm:items-center gap-1 sm:gap-1.5 sm:justify-end w-full sm:w-auto">
-                                <MagicButtonCompact purchaseId={item.purchase.id} onComplete={fetchData} />
-                                <button
-                                  onClick={() => handlePrepare(item.purchase.id)}
-                                  disabled={preparingId === item.purchase.id}
-                                  className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-md hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
-                                  title="AI-анализ"
-                                >
-                                  {preparingId === item.purchase.id ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                  AI
-                                </button>
+                                <MagicButtonCompact
+                                  purchaseId={item.purchase.id}
+                                  purchase={item.purchase}
+                                  onComplete={fetchData}
+                                  onApprove={(data) => handleApprove(item.purchase.id, data)}
+                                />
                                 <button
                                   onClick={() => toggleFavorite(item.purchaseId)}
                                   className={`p-1 rounded-lg transition-colors ${item.isFavorite ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`}
@@ -350,13 +322,6 @@ export default function FoundPurchasesPage() {
                                 >
                                   <ExternalLink size={14} />
                                 </Link>
-                                <Link
-                                  href={`/purchases/${item.purchase.purchaseNumber}`}
-                                  className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                                  title="В рассылку"
-                                >
-                                  <Send size={14} />
-                                </Link>
                                 <button
                                   onClick={() => handleDeleteItem(item.id)}
                                   disabled={deletingItemId === item.id}
@@ -368,6 +333,11 @@ export default function FoundPurchasesPage() {
                                     : <Trash2 size={14} />}
                                 </button>
                               </div>
+                              {approvedIds.has(item.purchase.id) && (
+                                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium text-right">
+                                  ✓ Отправлено в рассылку
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
