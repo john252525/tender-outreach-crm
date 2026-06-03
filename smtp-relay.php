@@ -50,10 +50,26 @@ $smtpUser   = $input['smtpUser']   ?? '';
 $smtpPass   = $input['smtpPass']   ?? '';
 $smtpSecure = !empty($input['smtpSecure']);
 $emailFrom  = $input['emailFrom']  ?? $smtpUser;
+$fromName   = $input['fromName']   ?? '';
 $to         = $input['to']         ?? '';
 $subject    = $input['subject']    ?? '';
 $body       = $input['body']       ?? '';
 $inReplyTo  = $input['inReplyTo']  ?? '';
+
+// Extract bare envelope address from "Name <addr>" if needed.
+// MAIL FROM must contain a bare address — display name belongs only in From: header.
+$envelopeFrom = $emailFrom;
+if (preg_match('/<([^>]+)>/', $emailFrom, $m)) {
+    $envelopeFrom = $m[1];
+}
+
+// Build From: header value. fromName (if provided) wins over any name in emailFrom.
+if ($fromName !== '') {
+    $name = str_replace('"', '', $fromName);
+    $fromHeader = "\"$name\" <$envelopeFrom>";
+} else {
+    $fromHeader = $emailFrom;
+}
 
 if (!$smtpHost || !$smtpUser || !$smtpPass || !$to) {
     json_err('Missing required fields: smtpHost, smtpUser, smtpPass, to');
@@ -65,7 +81,7 @@ $boundary = md5(uniqid(microtime(true)));
 $messageId = '<' . bin2hex(random_bytes(16)) . '@' . gethostname() . '>';
 $date = date('r');
 
-$headers  = "From: $emailFrom\r\n";
+$headers  = "From: $fromHeader\r\n";
 $headers .= "To: $to\r\n";
 $headers .= "Subject: $subject\r\n";
 $headers .= "Date: $date\r\n";
@@ -228,7 +244,7 @@ foreach ($attempts as $a) {
     $sent = smtp_send(
         $smtpHost, $a['port'], $a['secure'],
         $smtpUser, $smtpPass,
-        $emailFrom, $to,
+        $envelopeFrom, $to,
         $headers,
         $log
     );

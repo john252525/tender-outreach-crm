@@ -14,6 +14,7 @@ interface SmtpSettings {
   smtpPass?: string;
   smtpSecure?: boolean;
   emailFrom?: string;
+  fromName?: string;
   smtpRelayUrl?: string;
 }
 
@@ -70,9 +71,8 @@ export class EmailsService {
           smtpUser: account.smtpUser,
           smtpPass: account.smtpPass,
           smtpSecure: account.smtpPort === 465,
-          emailFrom: account.senderName
-            ? `"${account.senderName}" <${account.email}>`
-            : account.email,
+          emailFrom: account.email,
+          fromName: account.senderName || undefined,
           smtpRelayUrl: account.smtpRelayUrl || undefined,
         };
       }
@@ -119,7 +119,7 @@ export class EmailsService {
     body: string,
     inReplyTo?: string,
   ): Promise<string | null> {
-    const { smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, emailFrom } =
+    const { smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, emailFrom, fromName } =
       settings;
 
     // Resolve hostname to IPv4 (Railway has no IPv6)
@@ -132,7 +132,8 @@ export class EmailsService {
       this.logger.warn(`SMTP DNS resolve failed for ${smtpHost}, using as-is`);
     }
 
-    const from = emailFrom || smtpUser;
+    const addr = emailFrom || smtpUser!;
+    const from = fromName ? `"${fromName.replace(/"/g, '')}" <${addr}>` : addr;
     const mailOptions = {
       from,
       to,
@@ -188,7 +189,7 @@ export class EmailsService {
     body: string,
     inReplyTo?: string,
   ): Promise<string | null> {
-    const { smtpRelayUrl, smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, emailFrom } =
+    const { smtpRelayUrl, smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, emailFrom, fromName } =
       settings;
 
     this.logger.log(`Sending via relay: ${smtpRelayUrl}`);
@@ -200,6 +201,7 @@ export class EmailsService {
       smtpPass,
       smtpSecure: !!smtpSecure,
       emailFrom: emailFrom || smtpUser,
+      fromName: fromName || undefined,
       to,
       subject,
       body,
