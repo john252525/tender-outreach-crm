@@ -584,6 +584,7 @@ export class OutreachService {
           smtpPass: account.smtpPass,
           smtpSecure: account.smtpPort === 465,
           emailFrom: account.email,
+          fromName: account.senderName || undefined,
           to,
           subject,
           body: fullBody,
