@@ -56,18 +56,42 @@ export class EmailsService {
     inReplyTo?: string,
     accountId?: string,
   ): Promise<EmailMessage> {
-    const { smtpHost, smtpUser, smtpPass, smtpRelayUrl } = settings;
+    // When a specific outreach account is chosen (e.g. from the messenger),
+    // send through its own SMTP credentials instead of the profile defaults.
+    let sendSettings: SmtpSettings = settings;
+    if (accountId) {
+      const account = await this.emailAccountRepository.findOne({
+        where: { id: accountId, userId },
+      });
+      if (account) {
+        sendSettings = {
+          smtpHost: account.smtpHost,
+          smtpPort: account.smtpPort,
+          smtpUser: account.smtpUser,
+          smtpPass: account.smtpPass,
+          smtpSecure: account.smtpPort === 465,
+          emailFrom: account.senderName
+            ? `"${account.senderName}" <${account.email}>`
+            : account.email,
+          smtpRelayUrl: account.smtpRelayUrl || undefined,
+        };
+      }
+    }
+
+    const { smtpHost, smtpUser, smtpPass, smtpRelayUrl } = sendSettings;
 
     if (!smtpHost || !smtpUser || !smtpPass) {
       throw new BadRequestException(
-        'Настройте SMTP в профиле (host, user, password)',
+        accountId
+          ? 'У выбранного аккаунта не настроен SMTP (host, user, password)'
+          : 'Настройте SMTP в профиле (host, user, password)',
       );
     }
 
     // Choose path: relay URL or direct SMTP
     const messageId = smtpRelayUrl
-      ? await this.sendViaRelay(settings, to, subject, body, inReplyTo)
-      : await this.sendDirectSmtp(settings, to, subject, body, inReplyTo);
+      ? await this.sendViaRelay(sendSettings, to, subject, body, inReplyTo)
+      : await this.sendDirectSmtp(sendSettings, to, subject, body, inReplyTo);
 
     const message = this.emailMessageRepository.create({
       userId,

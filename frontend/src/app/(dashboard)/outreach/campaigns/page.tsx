@@ -475,6 +475,14 @@ export default function CampaignsPage() {
                         </div>
                       </div>
 
+                      {/* Email log link */}
+                      <Link
+                        href={`/outreach/campaigns/${campaign.id}/log`}
+                        className="flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-2 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+                      >
+                        <Mail size={14} /> Журнал отправленных писем →
+                      </Link>
+
                       {/* Steps Editor */}
                       <div>
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
