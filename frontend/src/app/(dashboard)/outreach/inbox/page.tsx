@@ -70,12 +70,15 @@ export default function OutreachInboxPage() {
     setChecking(true);
     setCheckResult(null);
     try {
-      const result = await api.post<{ checked: number; newReplies: number; errors: string[] }>(
+      const result = await api.post<{ checked: number; newReplies: number; newBounces: number; errors: string[] }>(
         '/outreach/inbox/check-replies',
         {},
       );
-      if (result.newReplies > 0) {
-        setCheckResult(`Найдено новых ответов: ${result.newReplies}`);
+      if (result.newReplies > 0 || result.newBounces > 0) {
+        const parts: string[] = [];
+        if (result.newReplies > 0) parts.push(`новых ответов: ${result.newReplies}`);
+        if (result.newBounces > 0) parts.push(`отскоков: ${result.newBounces}`);
+        setCheckResult(`Найдено — ${parts.join(', ')}`);
         fetchInbox();
       } else if (result.errors.length > 0 && result.checked === 0) {
         setCheckResult(result.errors[0]);

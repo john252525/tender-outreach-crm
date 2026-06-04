@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SshServersModule } from './ssh-servers/ssh-servers.module';
@@ -33,6 +34,7 @@ import { CryptoDealsModule } from './crypto-deals/crypto-deals.module';
       retryAttempts: 3,
       retryDelay: 3000,
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     SshServersModule,
