@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, LessThanOrEqual } from 'typeorm';
 import * as nodemailer from 'nodemailer';
@@ -13,6 +14,7 @@ import { OutreachCampaignEmail } from './entities/campaign-email.entity';
 @Injectable()
 export class OutreachService {
   private readonly logger = new Logger(OutreachService.name);
+  private autoCheckRunning = false;
 
   constructor(
     @InjectRepository(OutreachEmailAccount)
@@ -657,13 +659,13 @@ export class OutreachService {
 
   // ===================== CHECK REPLIES VIA IMAP =====================
 
-  async checkReplies(userId: string): Promise<{ checked: number; newReplies: number; errors: string[] }> {
+  async checkReplies(userId: string): Promise<{ checked: number; newReplies: number; newBounces: number; errors: string[] }> {
     // Get accounts with IMAP configured
     const accounts = await this.emailAccountRepo.find({ where: { userId } });
     const imapAccounts = accounts.filter((a) => a.imapHost && a.imapUser && a.imapPass);
 
     if (imapAccounts.length === 0) {
-      return { checked: 0, newReplies: 0, errors: ['Нет аккаунтов с настроенным IMAP'] };
+      return { checked: 0, newReplies: 0, newBounces: 0, errors: ['Нет аккаунтов с настроенным IMAP'] };
     }
 
     const { ImapFlow } = await this.loadImapFlow();
@@ -671,11 +673,12 @@ export class OutreachService {
 
     let totalChecked = 0;
     let totalNewReplies = 0;
+    let totalNewBounces = 0;
     const errors: string[] = [];
 
     for (const account of imapAccounts) {
       try {
-        const { checked, newReplies } = await this.checkAccountReplies(
+        const { checked, newReplies, newBounces } = await this.checkAccountReplies(
           account,
           userId,
           ImapFlow,
@@ -683,13 +686,55 @@ export class OutreachService {
         );
         totalChecked += checked;
         totalNewReplies += newReplies;
+        totalNewBounces += newBounces;
       } catch (err: any) {
         this.logger.error(`IMAP check failed for ${account.email}: ${err.message}`);
         errors.push(`${account.email}: ${err.message}`);
       }
     }
 
-    return { checked: totalChecked, newReplies: totalNewReplies, errors };
+    return { checked: totalChecked, newReplies: totalNewReplies, newBounces: totalNewBounces, errors };
+  }
+
+  /**
+   * Periodically scan IMAP inboxes of every user with a configured account, so
+   * replies and bounces are picked up even when nobody opens the inbox page.
+   * Runs in-process — works on Railway because the API service stays alive.
+   * Disable with OUTREACH_AUTO_CHECK=false; change cadence with OUTREACH_CHECK_CRON
+   * (a cron expression, default every 10 minutes).
+   */
+  @Cron(process.env.OUTREACH_CHECK_CRON || CronExpression.EVERY_10_MINUTES, {
+    name: 'outreach-check-replies',
+  })
+  async scheduledCheckReplies(): Promise<void> {
+    if (process.env.OUTREACH_AUTO_CHECK === 'false') return;
+    if (this.autoCheckRunning) return; // skip if a previous run is still going
+    this.autoCheckRunning = true;
+    try {
+      const accounts = await this.emailAccountRepo.find();
+      const userIds = [
+        ...new Set(
+          accounts
+            .filter((a) => a.imapHost && a.imapUser && a.imapPass)
+            .map((a) => a.userId),
+        ),
+      ];
+
+      for (const userId of userIds) {
+        try {
+          const { newReplies, newBounces } = await this.checkReplies(userId);
+          if (newReplies || newBounces) {
+            this.logger.log(
+              `Auto IMAP check (${userId}): ${newReplies} replies, ${newBounces} bounces`,
+            );
+          }
+        } catch (err: any) {
+          this.logger.warn(`Auto IMAP check failed for ${userId}: ${err.message}`);
+        }
+      }
+    } finally {
+      this.autoCheckRunning = false;
+    }
   }
 
   private async checkAccountReplies(
@@ -697,7 +742,7 @@ export class OutreachService {
     userId: string,
     ImapFlow: any,
     simpleParser: (source: any) => Promise<any>,
-  ): Promise<{ checked: number; newReplies: number }> {
+  ): Promise<{ checked: number; newReplies: number; newBounces: number }> {
     const client = new ImapFlow({
       host: account.imapHost,
       port: account.imapPort || 993,
@@ -709,6 +754,7 @@ export class OutreachService {
 
     let checked = 0;
     let newReplies = 0;
+    let newBounces = 0;
 
     try {
       await client.connect();
@@ -716,7 +762,7 @@ export class OutreachService {
 
       try {
         const totalMessages = client.mailbox?.exists || 0;
-        if (totalMessages === 0) return { checked: 0, newReplies: 0 };
+        if (totalMessages === 0) return { checked: 0, newReplies: 0, newBounces: 0 };
 
         const startSeq = Math.max(1, totalMessages - 49);
 
@@ -730,6 +776,14 @@ export class OutreachService {
 
           const inReplyTo = envelope.inReplyTo || null;
           const fromAddr = envelope.from?.[0]?.address?.toLowerCase() || '';
+
+          // Bounce check first: some DSNs carry the original Message-ID in
+          // In-Reply-To and would otherwise be miscounted as a reply.
+          const bounce = await this.handleBounce(msg, account, simpleParser);
+          if (bounce.isBounce) {
+            newBounces += bounce.counted;
+            continue;
+          }
 
           if (!fromAddr) continue;
 
@@ -767,7 +821,7 @@ export class OutreachService {
       throw err;
     }
 
-    return { checked, newReplies };
+    return { checked, newReplies, newBounces };
   }
 
   private async markAsReplied(campaignEmail: OutreachCampaignEmail, replyText: string): Promise<void> {
@@ -784,6 +838,130 @@ export class OutreachService {
 
     // Increment campaign statsReplied
     await this.campaignRepo.increment({ id: campaignEmail.campaignId }, 'statsReplied', 1);
+  }
+
+  // ===================== BOUNCE DETECTION =====================
+
+  /**
+   * Detect bounce / delivery-failure notifications and mark the matching sent
+   * campaign email as bounced. Returns { isBounce } so the caller skips reply
+   * strategies for this message, and { counted } for stats aggregation.
+   */
+  private async handleBounce(
+    msg: any,
+    account: OutreachEmailAccount,
+    simpleParser: (source: any) => Promise<any>,
+  ): Promise<{ isBounce: boolean; counted: number }> {
+    if (!this.isBounceMessage(msg.envelope)) {
+      return { isBounce: false, counted: 0 };
+    }
+
+    // Pull together everything we can read from the bounce to locate the
+    // original recipient / Message-ID it refers to.
+    let parsedText = '';
+    try {
+      const parsed = msg.source ? await simpleParser(msg.source) : null;
+      parsedText = `${parsed?.text || ''}\n${parsed?.html || ''}`;
+    } catch {
+      // ignore parse errors — fall back to raw source below
+    }
+    const rawText = `${parsedText}\n${msg.source ? msg.source.toString('utf8') : ''}`;
+
+    // 1) Match by the original Message-ID embedded in the DSN body.
+    const byId = await this.matchBounceByMessageId(rawText, account);
+    if (byId) {
+      await this.markAsBounced(byId, this.bounceReason(msg.envelope, rawText));
+      return { isBounce: true, counted: 1 };
+    }
+
+    // 2) Match by recipient address (Final-Recipient first, then any address).
+    const ownAddrs = [account.email?.toLowerCase(), account.smtpUser?.toLowerCase()];
+    for (const rcpt of this.extractBounceRecipients(rawText)) {
+      if (ownAddrs.includes(rcpt)) continue; // never the bounce target
+      const matched = await this.campaignEmailRepo.findOne({
+        where: { toEmail: rcpt, emailAccountId: account.id, status: 'sent' },
+        order: { sentAt: 'DESC' },
+      });
+      if (matched) {
+        await this.markAsBounced(matched, this.bounceReason(msg.envelope, rawText));
+        return { isBounce: true, counted: 1 };
+      }
+    }
+
+    // Recognised as a bounce but not mappable to a tracked send — still treat
+    // as handled so it is never misclassified as a reply.
+    return { isBounce: true, counted: 0 };
+  }
+
+  private isBounceMessage(envelope: any): boolean {
+    const fromAddr = envelope?.from?.[0]?.address?.toLowerCase() || '';
+    const subject = (envelope?.subject || '').toLowerCase();
+    const fromIsDaemon =
+      !fromAddr ||
+      fromAddr.includes('mailer-daemon') ||
+      fromAddr.includes('postmaster') ||
+      fromAddr.startsWith('bounce') ||
+      fromAddr.includes('mail-daemon');
+    const subjectLooksBounce =
+      /undeliver|delivery (status|has failed|failed|failure)|failure notice|returned mail|mail delivery (failed|system)|delivery incomplete|не доставлен|недоставл|возврат|сбой доставки/i.test(
+        subject,
+      );
+    return fromIsDaemon || subjectLooksBounce;
+  }
+
+  private async matchBounceByMessageId(
+    text: string,
+    account: OutreachEmailAccount,
+  ): Promise<OutreachCampaignEmail | null> {
+    const ids = text.match(/<[^<>@\s]+@[^<>@\s]+>/g) || [];
+    for (const id of [...new Set(ids)]) {
+      const matched = await this.campaignEmailRepo.findOne({
+        where: { messageId: id, emailAccountId: account.id, status: 'sent' },
+      });
+      if (matched) return matched;
+    }
+    return null;
+  }
+
+  private extractBounceRecipients(text: string): string[] {
+    const emails: string[] = [];
+    const push = (e?: string) => {
+      const v = e?.toLowerCase();
+      if (v && !emails.includes(v)) emails.push(v);
+    };
+    // Final-Recipient / Original-Recipient are the authoritative DSN fields.
+    const fieldRe = /(?:final|original)-recipient:\s*(?:rfc822;)?\s*<?([^\s<>;]+@[^\s<>;]+)>?/gi;
+    let m: RegExpExecArray | null;
+    while ((m = fieldRe.exec(text))) push(m[1]);
+    // Fallback: any address-looking token (matched only against our sent rows).
+    const anyRe = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+    while ((m = anyRe.exec(text))) push(m[0]);
+    return emails;
+  }
+
+  private bounceReason(envelope: any, text: string): string {
+    const subject = envelope?.subject || 'Возврат письма';
+    const status = /status:\s*(\d\.\d\.\d)/i.exec(text)?.[1];
+    const diag = /diagnostic-code:\s*(.+)/i.exec(text)?.[1]?.trim();
+    const parts = [subject];
+    if (status) parts.push(`status ${status}`);
+    if (diag) parts.push(diag.slice(0, 300));
+    return parts.join(' — ').slice(0, 1000);
+  }
+
+  private async markAsBounced(campaignEmail: OutreachCampaignEmail, reason: string): Promise<void> {
+    await this.campaignEmailRepo.update(campaignEmail.id, {
+      status: 'bounced',
+      errorMessage: reason || 'Возврат письма',
+    });
+
+    // Update campaign lead status
+    await this.campaignLeadRepo.update(campaignEmail.campaignLeadId, {
+      status: 'bounced',
+    });
+
+    // Increment campaign statsBounced
+    await this.campaignRepo.increment({ id: campaignEmail.campaignId }, 'statsBounced', 1);
   }
 
   private async extractReplyText(

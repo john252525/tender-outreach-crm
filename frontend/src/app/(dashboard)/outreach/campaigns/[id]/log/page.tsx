@@ -41,6 +41,7 @@ const FILTERS: Array<{ value: string; label: string }> = [
   { value: '',        label: 'Все' },
   { value: 'sent',    label: 'Отправленные' },
   { value: 'replied', label: 'С ответом' },
+  { value: 'bounced', label: 'Отскочило' },
   { value: 'failed',  label: 'Ошибки' },
   { value: 'scheduled', label: 'В очереди' },
 ];
