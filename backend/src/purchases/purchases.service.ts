@@ -96,7 +96,7 @@ export class PurchasesService {
 
     params.set('limit', String(dto.limit ?? 10));
     params.set('skip', String(dto.skip ?? 0));
-    params.set('sort', 'updated_at_desc');
+    params.set('sort', dto.sort || 'published_at_desc');
 
     if (dto.stage != null) {
       params.set('stage', String(dto.stage));
@@ -104,6 +104,22 @@ export class PurchasesService {
 
     if (dto.region != null) {
       params.set('region', String(dto.region));
+    }
+
+    if (dto.customer) {
+      params.set('customer', dto.customer);
+    }
+
+    if (dto.owner) {
+      params.set('owner', dto.owner);
+    }
+
+    if (dto.responsible) {
+      params.set('responsible', dto.responsible);
+    }
+
+    if (dto.purchaseNumber) {
+      params.set('purchase_number', dto.purchaseNumber);
     }
 
     if (dto.publishedAfter) {

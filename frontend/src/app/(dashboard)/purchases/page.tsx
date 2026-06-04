@@ -10,6 +10,8 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   FileText,
   FolderSearch,
@@ -26,6 +28,19 @@ const STAGE_LABELS: Record<number, string> = {
   3: 'Закупка завершена',
   4: 'Закупка отменена',
 };
+
+const DEFAULT_SORT = 'published_at_desc';
+
+const SORT_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'published_at_desc',         label: 'Дата публикации — сначала новые' },
+  { value: 'published_at_asc',          label: 'Дата публикации — сначала старые' },
+  { value: 'collecting_finished_at_desc', label: 'Окончание подачи — сначала поздние' },
+  { value: 'collecting_finished_at_asc',  label: 'Окончание подачи — сначала ранние' },
+  { value: 'max_price_desc',            label: 'Цена — по убыванию' },
+  { value: 'max_price_asc',             label: 'Цена — по возрастанию' },
+  { value: 'updated_at_desc',           label: 'Обновление — сначала новые' },
+  { value: 'updated_at_asc',            label: 'Обновление — сначала старые' },
+];
 
 const CACHE_KEY = 'purchases_last_search';
 
@@ -92,14 +107,24 @@ function PurchasesContent() {
 
   const [form, setForm] = useState({
     objectInfo: searchParams.get('objectInfo') || '',
+    customer: searchParams.get('customer') || '',
+    owner: searchParams.get('owner') || '',
+    responsible: searchParams.get('responsible') || '',
+    purchaseNumber: searchParams.get('purchaseNumber') || '',
     region: searchParams.get('region') || '',
     stage: searchParams.get('stage') || '',
     publishedAfter: searchParams.get('publishedAfter') || '',
     publishedBefore: searchParams.get('publishedBefore') || '',
     priceGe: searchParams.get('priceGe') || '',
     priceLe: searchParams.get('priceLe') || '',
+    sort: searchParams.get('sort') || DEFAULT_SORT,
     limit: searchParams.get('limit') || '20',
   });
+
+  // Pagination: how many records to skip, and the form that produced the
+  // currently shown page (so paging doesn't pick up unsubmitted edits).
+  const [skip, setSkip] = useState(parseInt(searchParams.get('skip') || '0', 10) || 0);
+  const [activeForm, setActiveForm] = useState<typeof form | null>(null);
 
   // Restore from cache or auto-search on mount
   useEffect(() => {
@@ -109,16 +134,24 @@ function PurchasesContent() {
     const cache = loadCache();
     if (cache && cache.results.length > 0) {
       const cachedParams = new URLSearchParams(cache.paramsString);
-      setForm({
+      const restored = {
         objectInfo: cachedParams.get('objectInfo') || '',
+        customer: cachedParams.get('customer') || '',
+        owner: cachedParams.get('owner') || '',
+        responsible: cachedParams.get('responsible') || '',
+        purchaseNumber: cachedParams.get('purchaseNumber') || '',
         region: cachedParams.get('region') || '',
         stage: cachedParams.get('stage') || '',
         publishedAfter: cachedParams.get('publishedAfter') || '',
         publishedBefore: cachedParams.get('publishedBefore') || '',
         priceGe: cachedParams.get('priceGe') || '',
         priceLe: cachedParams.get('priceLe') || '',
+        sort: cachedParams.get('sort') || DEFAULT_SORT,
         limit: cachedParams.get('limit') || '20',
-      });
+      };
+      setForm(restored);
+      setActiveForm(restored);
+      setSkip(parseInt(cachedParams.get('skip') || '0', 10) || 0);
       setResults(cache.results);
       setPipelineCounts(cache.pipelineCounts || {});
       setSearched(true);
@@ -128,26 +161,61 @@ function PurchasesContent() {
       return;
     }
 
-    if (searchParams.get('objectInfo')) {
-      doSearch(form);
+    if (searchParams.get('objectInfo') || searchParams.get('purchaseNumber')) {
+      doSearch(form, skip);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const doSearch = useCallback(async (f: typeof form) => {
-    setLoading(true);
-    setError('');
-    setSearched(true);
-
+  // Builds the query string sent to the backend. Empty fields are omitted so
+  // the corresponding GET param is never forwarded to the provider.
+  const buildParams = (f: typeof form, skipValue: number): URLSearchParams => {
     const params = new URLSearchParams();
     if (f.objectInfo.trim()) params.set('objectInfo', f.objectInfo.trim());
+    if (f.customer.trim()) params.set('customer', f.customer.trim());
+    if (f.owner.trim()) params.set('owner', f.owner.trim());
+    if (f.responsible.trim()) params.set('responsible', f.responsible.trim());
+    if (f.purchaseNumber.trim()) params.set('purchaseNumber', f.purchaseNumber.trim());
     params.set('limit', f.limit);
-    params.set('skip', '0');
+    params.set('skip', String(skipValue));
+    if (f.sort) params.set('sort', f.sort);
     if (f.stage) params.set('stage', f.stage);
     if (f.region) params.set('region', f.region);
     if (f.publishedAfter) params.set('publishedAfter', f.publishedAfter);
     if (f.publishedBefore) params.set('publishedBefore', f.publishedBefore);
     if (f.priceGe) params.set('priceGe', f.priceGe);
     if (f.priceLe) params.set('priceLe', f.priceLe);
+    return params;
+  };
+
+  // Builds the "shareable" params (browser URL + cache key) — defaults are
+  // omitted to keep the URL clean.
+  const buildPublicParams = (f: typeof form, skipValue: number): URLSearchParams => {
+    const params = new URLSearchParams();
+    if (f.objectInfo.trim()) params.set('objectInfo', f.objectInfo.trim());
+    if (f.customer.trim()) params.set('customer', f.customer.trim());
+    if (f.owner.trim()) params.set('owner', f.owner.trim());
+    if (f.responsible.trim()) params.set('responsible', f.responsible.trim());
+    if (f.purchaseNumber.trim()) params.set('purchaseNumber', f.purchaseNumber.trim());
+    if (f.limit !== '20') params.set('limit', f.limit);
+    if (f.sort && f.sort !== DEFAULT_SORT) params.set('sort', f.sort);
+    if (f.stage) params.set('stage', f.stage);
+    if (f.region) params.set('region', f.region);
+    if (f.publishedAfter) params.set('publishedAfter', f.publishedAfter);
+    if (f.publishedBefore) params.set('publishedBefore', f.publishedBefore);
+    if (f.priceGe) params.set('priceGe', f.priceGe);
+    if (f.priceLe) params.set('priceLe', f.priceLe);
+    if (skipValue > 0) params.set('skip', String(skipValue));
+    return params;
+  };
+
+  const doSearch = useCallback(async (f: typeof form, skipValue: number) => {
+    setLoading(true);
+    setError('');
+    setSearched(true);
+    setActiveForm(f);
+    setSkip(skipValue);
+
+    const params = buildParams(f, skipValue);
 
     try {
       const data = await api.get<SearchResponse>(`/purchases/search?${params.toString()}`);
@@ -162,17 +230,12 @@ function PurchasesContent() {
         setPipelineCounts({});
       }
 
-      // Save to cache
-      const urlParamsStr = new URLSearchParams();
-      if (f.objectInfo.trim()) urlParamsStr.set('objectInfo', f.objectInfo.trim());
-      if (f.limit !== '20') urlParamsStr.set('limit', f.limit);
-      if (f.stage) urlParamsStr.set('stage', f.stage);
-      if (f.region) urlParamsStr.set('region', f.region);
-      if (f.publishedAfter) urlParamsStr.set('publishedAfter', f.publishedAfter);
-      if (f.publishedBefore) urlParamsStr.set('publishedBefore', f.publishedBefore);
-      if (f.priceGe) urlParamsStr.set('priceGe', f.priceGe);
-      if (f.priceLe) urlParamsStr.set('priceLe', f.priceLe);
-      saveCache({ paramsString: urlParamsStr.toString(), results: data.results, pipelineCounts: counts });
+      // Save to cache (skip persisted so reopening restores the same page)
+      saveCache({
+        paramsString: buildPublicParams(f, skipValue).toString(),
+        results: data.results,
+        pipelineCounts: counts,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка поиска');
       setResults([]);
@@ -185,21 +248,23 @@ function PurchasesContent() {
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
       clearCache();
-
-      const urlParams = new URLSearchParams();
-      if (form.objectInfo.trim()) urlParams.set('objectInfo', form.objectInfo.trim());
-      if (form.limit !== '20') urlParams.set('limit', form.limit);
-      if (form.stage) urlParams.set('stage', form.stage);
-      if (form.region) urlParams.set('region', form.region);
-      if (form.publishedAfter) urlParams.set('publishedAfter', form.publishedAfter);
-      if (form.publishedBefore) urlParams.set('publishedBefore', form.publishedBefore);
-      if (form.priceGe) urlParams.set('priceGe', form.priceGe);
-      if (form.priceLe) urlParams.set('priceLe', form.priceLe);
-      router.replace(`/purchases?${urlParams.toString()}`);
-
-      await doSearch(form);
+      // New search always starts from the first page.
+      router.replace(`/purchases?${buildPublicParams(form, 0).toString()}`);
+      await doSearch(form, 0);
     },
-    [form, router, doSearch],
+    [form, router, doSearch], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // Paginate the currently active search (the form that produced the visible
+  // page), not any unsubmitted edits.
+  const handlePage = useCallback(
+    (newSkip: number) => {
+      const f = activeForm || form;
+      router.replace(`/purchases?${buildPublicParams(f, newSkip).toString()}`);
+      doSearch(f, newSkip);
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [activeForm, form, router, doSearch], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handleClear = useCallback(() => {
@@ -207,7 +272,13 @@ function PurchasesContent() {
     setResults([]);
     setSearched(false);
     setError('');
-    setForm({ objectInfo: '', region: '', stage: '', publishedAfter: '', publishedBefore: '', priceGe: '', priceLe: '', limit: '20' });
+    setSkip(0);
+    setActiveForm(null);
+    setForm({
+      objectInfo: '', customer: '', owner: '', responsible: '', purchaseNumber: '',
+      region: '', stage: '', publishedAfter: '', publishedBefore: '',
+      priceGe: '', priceLe: '', sort: DEFAULT_SORT, limit: '20',
+    });
     router.replace('/purchases');
   }, [router]);
 
@@ -245,6 +316,10 @@ function PurchasesContent() {
   }, []);
 
   if (!user) return null;
+
+  const pageLimit = parseInt(activeForm?.limit || form.limit, 10) || 20;
+  const currentPage = Math.floor(skip / pageLimit) + 1;
+  const hasNextPage = results.length >= pageLimit;
 
   return (
     <>
@@ -290,6 +365,22 @@ function PurchasesContent() {
           {showFilters && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Номер закупки</label>
+                <input type="text" inputMode="numeric" value={form.purchaseNumber} onChange={(e) => setForm((p) => ({ ...p, purchaseNumber: e.target.value }))} className="input-field" placeholder="Любой" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ИНН заказчика</label>
+                <input type="text" inputMode="numeric" value={form.customer} onChange={(e) => setForm((p) => ({ ...p, customer: e.target.value }))} className="input-field" placeholder="Любой" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ИНН владельца плана-графика</label>
+                <input type="text" inputMode="numeric" value={form.owner} onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))} className="input-field" placeholder="Любой" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ИНН организации размещения</label>
+                <input type="text" inputMode="numeric" value={form.responsible} onChange={(e) => setForm((p) => ({ ...p, responsible: e.target.value }))} className="input-field" placeholder="Любой" />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Регион</label>
                 <input type="number" min="0" value={form.region} onChange={(e) => setForm((p) => ({ ...p, region: e.target.value.replace('-', '') }))} className="input-field" placeholder="Все" />
               </div>
@@ -318,6 +409,14 @@ function PurchasesContent() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Цена до</label>
                 <input type="number" min="0" value={form.priceLe} onChange={(e) => setForm((p) => ({ ...p, priceLe: e.target.value.replace('-', '') }))} className="input-field" placeholder="10000000" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Сортировка</label>
+                <select value={form.sort} onChange={(e) => setForm((p) => ({ ...p, sort: e.target.value }))} className="input-field">
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Результатов</label>
@@ -454,6 +553,29 @@ function PurchasesContent() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {searched && !loading && (results.length > 0 || skip > 0) && (
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <button
+              onClick={() => handlePage(Math.max(0, skip - pageLimit))}
+              disabled={skip === 0}
+              className="btn-secondary flex items-center gap-1 !py-1.5 !px-3 text-sm disabled:opacity-40"
+            >
+              <ChevronLeft size={16} /> Назад
+            </button>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Стр. {currentPage}
+            </span>
+            <button
+              onClick={() => handlePage(skip + pageLimit)}
+              disabled={!hasNextPage}
+              className="btn-secondary flex items-center gap-1 !py-1.5 !px-3 text-sm disabled:opacity-40"
+            >
+              Вперёд <ChevronRight size={16} />
+            </button>
           </div>
         )}
       </div>
