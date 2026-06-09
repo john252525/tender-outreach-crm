@@ -169,6 +169,7 @@ export default function PurchaseDetailPage() {
       try {
         const data = await api.get<Purchase>(`/purchases/${purchaseNumber}`);
         setPurchase(data);
+        setIsFavorite(!!data.isFavorite);
         // Fetch AI result if exists
         try {
           const result = await api.get<PurchaseAiResult | null>(`/purchases/${data.id}/ai-result`);

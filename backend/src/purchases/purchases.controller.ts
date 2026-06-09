@@ -291,8 +291,11 @@ export class PurchasesController {
   }
 
   @Get(':purchaseNumber')
-  async getById(@Param('purchaseNumber') purchaseNumber: string) {
-    const purchase = await this.purchasesService.getById(purchaseNumber);
+  async getById(
+    @Param('purchaseNumber') purchaseNumber: string,
+    @CurrentUser() user: User,
+  ) {
+    const purchase = await this.purchasesService.getById(purchaseNumber, user.id);
     if (!purchase) {
       throw new NotFoundException('Закупка не найдена');
     }
