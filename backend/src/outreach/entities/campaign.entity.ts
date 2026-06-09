@@ -58,6 +58,15 @@ export class OutreachCampaign {
   @Column({ name: 'stats_bounced', type: 'int', default: 0 })
   statsBounced: number;
 
+  // Optional link back to the tender this campaign was created from.
+  // Denormalized number is kept so the campaign list can show the tender
+  // reference without joining the purchases table.
+  @Column({ name: 'source_purchase_id', type: 'uuid', nullable: true })
+  sourcePurchaseId: string | null;
+
+  @Column({ name: 'source_purchase_number', type: 'varchar', nullable: true })
+  sourcePurchaseNumber: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

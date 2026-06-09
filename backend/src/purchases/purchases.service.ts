@@ -1417,6 +1417,32 @@ export class PurchasesService {
 
   // --- Approve tender to Email Outreach ---
 
+  async getLinkedCampaigns(
+    purchaseId: string,
+    userId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      name: string;
+      status: string;
+      statsSent: number;
+      statsReplied: number;
+      statsBounced: number;
+      createdAt: Date;
+    }>
+  > {
+    const campaigns = await this.outreachService.getCampaignsForPurchase(purchaseId, userId);
+    return campaigns.map((c) => ({
+      id: c.id,
+      name: c.name,
+      status: c.status,
+      statsSent: c.statsSent,
+      statsReplied: c.statsReplied,
+      statsBounced: c.statsBounced,
+      createdAt: c.createdAt,
+    }));
+  }
+
   async approveToOutreach(
     purchaseId: string,
     userId: string,
@@ -1440,6 +1466,8 @@ export class PurchasesService {
     const campaign = await this.outreachService.createCampaign(userId, {
       name,
       leadListId: leadList.id,
+      sourcePurchaseId: purchase.id,
+      sourcePurchaseNumber: purchase.purchaseNumber,
     });
 
     if (data.subject || data.body) {
