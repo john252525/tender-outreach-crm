@@ -18,6 +18,22 @@ import { EmailBlacklist } from './entities/email-blacklist.entity';
 import { SearchPurchasesDto } from './dto/search-purchases.dto';
 import { callAiApi } from '../common/ai-api.util';
 
+export interface MagicApproveResult {
+  purchaseId: string;
+  purchaseNumber: string | null;
+  status: 'approved' | 'no_emails' | 'error';
+  campaignId?: string;
+  emailsCount: number;
+  docsParsed: number;
+  docsTotal: number;
+  sitesFound: number;
+  subject: string | null;
+  launched: boolean;
+  sent?: number;
+  warnings: string[];
+  error?: string;
+}
+
 @Injectable()
 export class PurchasesService {
   private readonly logger = new Logger(PurchasesService.name);
@@ -1413,6 +1429,180 @@ export class PurchasesService {
     await this.webSearchResultEmailRepository.delete({ webSearchResultId: id });
     await this.webSearchResultSearchTermRepository.delete({ webSearchResultId: id });
     await this.webSearchResultRepository.delete({ id });
+  }
+
+  // --- Magic approve: full pipeline server-side (for external API) ---
+
+  async magicApprove(
+    purchaseId: string,
+    user: {
+      id: string;
+      settings?: {
+        parserDocsUrl?: string;
+        proxyUrl?: string;
+        aiUrl?: string;
+        aiPrompt?: string;
+        searchApiUrl?: string;
+      } | null;
+    },
+    opts: { launch?: boolean } = {},
+  ): Promise<MagicApproveResult> {
+    const warnings: string[] = [];
+
+    // 1. Purchase + detail/files (detail is fetched lazily on first access)
+    let purchase = await this.purchaseRepository.findOne({
+      where: { id: purchaseId },
+      relations: ['files'],
+    });
+    if (!purchase) throw new NotFoundException('Закупка не найдена');
+    if (!purchase.detailFetchedAt) {
+      await this.fetchAndStoreDetail(purchase);
+      purchase = await this.purchaseRepository.findOne({
+        where: { id: purchaseId },
+        relations: ['files'],
+      });
+      if (!purchase) throw new NotFoundException('Закупка не найдена');
+    }
+
+    // 2. Parse documents that have no saved text yet (per-file tolerant,
+    // mirrors the UI pipeline)
+    const files = purchase.files || [];
+    for (const file of files.filter((f) => !f.parsedText)) {
+      try {
+        await this.parseAndSaveFileText(file.id, user);
+      } catch (e: any) {
+        warnings.push(`Документ "${file.fileName || file.id}": ${e.message}`);
+      }
+    }
+    const docsParsed = (await this.purchaseFileRepository.find({
+      where: { purchaseId },
+    })).filter((f) => f.parsedText).length;
+
+    // 3. AI prepare — reuse an existing result so re-runs are idempotent and
+    // don't burn AI calls; hard failure aborts this purchase
+    let aiResult = await this.getAiResult(purchaseId, user.id);
+    if (!aiResult || !aiResult.searchTerm) {
+      aiResult = await this.preparePurchase(purchaseId, user);
+    }
+
+    // 4. Web search by the AI-generated term (reuse stored results if any)
+    let sites: Array<{ id: string; url: string; emails: string[] }> = [];
+    if (aiResult.searchTerm) {
+      sites = await this.getWebSearchResults(aiResult.searchTerm.id, user.id);
+      if (sites.length === 0) {
+        try {
+          sites = await this.executeWebSearch(aiResult.searchTerm.id, user);
+        } catch (e: any) {
+          warnings.push(`Веб-поиск: ${e.message}`);
+        }
+      }
+    } else {
+      warnings.push('AI не вернул поисковый запрос — поиск сайтов пропущен');
+    }
+
+    // 5. Collect emails per site (per-site tolerant); sites whose emails were
+    // parsed earlier are reused without refetching
+    const allEmails = new Set<string>();
+    for (const site of sites) {
+      if (site.emails && site.emails.length > 0) {
+        site.emails.forEach((e) => allEmails.add(e));
+        continue;
+      }
+      try {
+        const res = await this.parseEmailsFromSite(site.id, user.id);
+        res.emails.forEach((e) => allEmails.add(e));
+      } catch (e: any) {
+        warnings.push(`Сайт ${site.url}: ${e.message}`);
+      }
+    }
+    const emails = Array.from(allEmails).sort();
+
+    const base = {
+      purchaseId,
+      purchaseNumber: purchase.purchaseNumber,
+      emailsCount: emails.length,
+      docsParsed,
+      docsTotal: files.length,
+      sitesFound: sites.length,
+      subject: aiResult.subject,
+      warnings,
+    };
+
+    if (emails.length === 0) {
+      return { ...base, status: 'no_emails', launched: false };
+    }
+
+    // 6. Create lead list + campaign (campaign gets the user's default email
+    // account automatically when one is resolvable)
+    const { campaignId } = await this.approveToOutreach(purchaseId, user.id, {
+      emails,
+      subject: aiResult.subject || '',
+      body: aiResult.body || '',
+    });
+
+    // 7. Optional launch + immediate first send. The campaign is already
+    // created at this point, so launch problems are reported as warnings
+    // rather than failing the whole call.
+    let launched = false;
+    let sent: number | undefined;
+    if (opts.launch) {
+      try {
+        await this.outreachService.launchCampaign(campaignId, user.id);
+        launched = true;
+        const r = await this.outreachService.processCampaignEmails(campaignId, user.id);
+        sent = r.sent;
+        if (r.errors > 0) warnings.push(`Ошибок при отправке: ${r.errors}`);
+      } catch (e: any) {
+        warnings.push(`Кампания создана, но не запущена: ${e.message}`);
+      }
+    }
+
+    return { ...base, status: 'approved', campaignId, launched, sent };
+  }
+
+  async bulkMagicApprove(
+    purchaseIds: string[],
+    user: {
+      id: string;
+      settings?: {
+        parserDocsUrl?: string;
+        proxyUrl?: string;
+        aiUrl?: string;
+        aiPrompt?: string;
+        searchApiUrl?: string;
+      } | null;
+    },
+    opts: { launch?: boolean } = {},
+  ): Promise<{ results: MagicApproveResult[] }> {
+    const ids = (purchaseIds || []).filter(Boolean);
+    if (ids.length === 0) {
+      throw new BadRequestException('Укажите purchaseIds');
+    }
+    if (ids.length > 10) {
+      throw new BadRequestException('Максимум 10 закупок за один запрос');
+    }
+
+    const results: MagicApproveResult[] = [];
+    for (const pid of ids) {
+      try {
+        results.push(await this.magicApprove(pid, user, opts));
+      } catch (e: any) {
+        results.push({
+          purchaseId: pid,
+          purchaseNumber: null,
+          status: 'error',
+          error: e.message || 'Неизвестная ошибка',
+          emailsCount: 0,
+          docsParsed: 0,
+          docsTotal: 0,
+          sitesFound: 0,
+          subject: null,
+          launched: false,
+          warnings: [],
+        });
+      }
+    }
+    return { results };
   }
 
   // --- Approve tender to Email Outreach ---
