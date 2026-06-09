@@ -312,6 +312,8 @@ export class OutreachService {
       sendToHour?: number;
       timezone?: string;
       trackOpens?: boolean;
+      sourcePurchaseId?: string;
+      sourcePurchaseNumber?: string;
     },
   ): Promise<OutreachCampaign> {
     const campaign = this.campaignRepo.create({
@@ -324,8 +326,20 @@ export class OutreachService {
       sendToHour: data.sendToHour ?? 18,
       timezone: data.timezone || 'Europe/Moscow',
       trackOpens: data.trackOpens ?? false,
+      sourcePurchaseId: data.sourcePurchaseId || null,
+      sourcePurchaseNumber: data.sourcePurchaseNumber || null,
     });
     return this.campaignRepo.save(campaign);
+  }
+
+  async getCampaignsForPurchase(
+    purchaseId: string,
+    userId: string,
+  ): Promise<OutreachCampaign[]> {
+    return this.campaignRepo.find({
+      where: { userId, sourcePurchaseId: purchaseId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async updateCampaign(

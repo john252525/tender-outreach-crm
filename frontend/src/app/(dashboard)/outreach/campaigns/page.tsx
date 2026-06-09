@@ -31,6 +31,7 @@ import {
   XCircle,
   Reply,
   CircleDot,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -362,9 +363,21 @@ export default function CampaignsPage() {
                     >
                       <Zap size={18} className="text-amber-500 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
-                          {campaign.name}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
+                            {campaign.name}
+                          </p>
+                          {campaign.sourcePurchaseNumber && (
+                            <Link
+                              href={`/purchases/${campaign.sourcePurchaseNumber}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/30 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+                              title="Открыть тендер"
+                            >
+                              <FileText size={10} /> №{campaign.sourcePurchaseNumber}
+                            </Link>
+                          )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           <span>{campaign.steps?.length || 0} шагов</span>
                           <span className="flex items-center gap-1"><Send size={10} /> {campaign.statsSent}</span>

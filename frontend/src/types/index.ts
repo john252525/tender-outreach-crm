@@ -483,10 +483,23 @@ export interface OutreachCampaign {
   statsOpened: number;
   statsReplied: number;
   statsBounced: number;
+  sourcePurchaseId?: string | null;
+  sourcePurchaseNumber?: string | null;
   createdAt: string;
   updatedAt: string;
   steps?: OutreachCampaignStep[];
   campaignLeads?: OutreachCampaignLead[];
+}
+
+// Compact projection returned by GET /purchases/:purchaseId/campaigns.
+export interface LinkedCampaignSummary {
+  id: string;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'completed';
+  statsSent: number;
+  statsReplied: number;
+  statsBounced: number;
+  createdAt: string;
 }
 
 export interface OutreachCampaignStep {

@@ -183,6 +183,14 @@ export class PurchasesController {
     return this.purchasesService.approveToOutreach(purchaseId, user.id, { emails, subject, body });
   }
 
+  @Get(':purchaseId/campaigns')
+  getLinkedCampaigns(
+    @Param('purchaseId') purchaseId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.purchasesService.getLinkedCampaigns(purchaseId, user.id);
+  }
+
   @Get(':purchaseId/ai-result')
   getAiResult(
     @Param('purchaseId') purchaseId: string,

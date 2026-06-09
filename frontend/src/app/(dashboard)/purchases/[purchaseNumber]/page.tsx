@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import { api } from '@/lib/api';
-import { Purchase, PurchaseFile, PurchaseAiResult } from '@/types';
+import { Purchase, PurchaseFile, PurchaseAiResult, LinkedCampaignSummary } from '@/types';
 import {
   FileDown,
   Calendar,
@@ -23,7 +23,18 @@ import {
   MessageSquare,
   Wand2,
   Star,
+  Zap,
+  Send,
+  Reply,
+  AlertTriangle,
 } from 'lucide-react';
+
+const CAMPAIGN_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  draft:     { label: 'Черновик',  color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+  active:    { label: 'Активна',   color: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  paused:    { label: 'Пауза',     color: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+  completed: { label: 'Завершена', color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+};
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import MagicPipeline from '@/components/magic-pipeline';
@@ -88,6 +99,7 @@ export default function PurchaseDetailPage() {
   const [approving, setApproving] = useState(false);
   const [approveResult, setApproveResult] = useState<{ campaignId: string } | null>(null);
   const [approveError, setApproveError] = useState('');
+  const [linkedCampaigns, setLinkedCampaigns] = useState<LinkedCampaignSummary[]>([]);
 
   const handlePreview = async (file: PurchaseFile) => {
     if (file.parsedText) {
@@ -155,6 +167,9 @@ export default function PurchaseDetailPage() {
     try {
       const result = await api.post<{ campaignId: string }>(`/purchases/${purchase.id}/approve-to-outreach`, data);
       setApproveResult(result);
+      api.get<LinkedCampaignSummary[]>(`/purchases/${purchase.id}/campaigns`)
+        .then(setLinkedCampaigns)
+        .catch(() => {});
     } catch (err) {
       setApproveError(err instanceof Error ? err.message : 'Ошибка создания кампании');
     } finally {
@@ -169,13 +184,14 @@ export default function PurchaseDetailPage() {
       try {
         const data = await api.get<Purchase>(`/purchases/${purchaseNumber}`);
         setPurchase(data);
-        // Fetch AI result if exists
-        try {
-          const result = await api.get<PurchaseAiResult | null>(`/purchases/${data.id}/ai-result`);
-          if (result) setAiResult(result);
-        } catch {
-          // no AI result yet
-        }
+        // Fetch AI result and linked campaigns in parallel — neither blocks
+        // the page from rendering.
+        api.get<PurchaseAiResult | null>(`/purchases/${data.id}/ai-result`)
+          .then((r) => { if (r) setAiResult(r); })
+          .catch(() => {});
+        api.get<LinkedCampaignSummary[]>(`/purchases/${data.id}/campaigns`)
+          .then(setLinkedCampaigns)
+          .catch(() => {});
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки');
       } finally {
@@ -378,6 +394,53 @@ export default function PurchaseDetailPage() {
                 </div>
               </div>
             )}
+            {/* Linked campaigns */}
+            {linkedCampaigns.length > 0 && (
+              <div className="card">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap size={16} className="text-amber-500" />
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Связанные рассылки
+                    <span className="ml-2 text-xs font-normal text-gray-400">
+                      ({linkedCampaigns.length})
+                    </span>
+                  </h4>
+                </div>
+                <div className="space-y-2">
+                  {linkedCampaigns.map((c) => {
+                    const cfg = CAMPAIGN_STATUS_LABELS[c.status] || CAMPAIGN_STATUS_LABELS.draft;
+                    return (
+                      <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/30">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
+                              {c.name}
+                            </p>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${cfg.color}`}>
+                              {cfg.label}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="flex items-center gap-1"><Send size={10} /> {c.statsSent}</span>
+                            <span className="flex items-center gap-1"><Reply size={10} /> {c.statsReplied}</span>
+                            {c.statsBounced > 0 && (
+                              <span className="flex items-center gap-1 text-red-500"><AlertTriangle size={10} /> {c.statsBounced}</span>
+                            )}
+                          </div>
+                        </div>
+                        <Link
+                          href={`/outreach/campaigns/${c.id}/log`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/20 dark:text-primary-400 rounded-md hover:bg-primary-100 transition-colors shrink-0"
+                        >
+                          <Mail size={12} /> Журнал
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Analysis & Outreach */}
             <div className="card">
               <div className="flex items-center gap-2 mb-4">

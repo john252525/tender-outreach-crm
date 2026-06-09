@@ -22,6 +22,7 @@ import {
   Mail,
   Loader2,
   Inbox,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -139,7 +140,18 @@ export default function CampaignLogPage() {
 
         {campaign && (
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{campaign.name}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{campaign.name}</h2>
+              {campaign.sourcePurchaseNumber && (
+                <Link
+                  href={`/purchases/${campaign.sourcePurchaseNumber}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/30 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+                  title="Открыть тендер"
+                >
+                  <FileText size={10} /> Тендер №{campaign.sourcePurchaseNumber}
+                </Link>
+              )}
+            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Всего писем: {total}
             </p>
