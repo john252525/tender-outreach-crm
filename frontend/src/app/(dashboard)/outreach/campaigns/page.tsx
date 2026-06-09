@@ -41,6 +41,18 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   completed: { label: 'Завершена', color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
 };
 
+// Mirrors the backend's default-account resolution so the create form opens
+// with the right account pre-selected: the marked default if active, else the
+// only active account, else nothing.
+function resolveDefaultSelection(accounts: OutreachEmailAccount[]): string[] {
+  const active = accounts.filter((a) => a.status === 'active');
+  if (active.length === 0) return [];
+  const explicit = active.find((a) => a.isDefault);
+  if (explicit) return [explicit.id];
+  if (active.length === 1) return [active[0].id];
+  return [];
+}
+
 const LEAD_STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending:      { label: 'В очереди',        color: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',          icon: <Clock size={10} /> },
   in_progress:  { label: 'Отправляется',     color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',        icon: <Loader2 size={10} className="animate-spin" /> },
@@ -115,6 +127,20 @@ export default function CampaignsPage() {
       }
     } catch {
       // ignore
+    }
+  };
+
+  const openCreateForm = () => {
+    const opening = !showCreate;
+    setShowCreate(opening);
+    if (opening) {
+      // Pre-select the default sending account so the campaign is
+      // launch-ready immediately, just like the backend would auto-fill it.
+      setCreateForm((f) =>
+        f.emailAccountIds.length > 0
+          ? f
+          : { ...f, emailAccountIds: resolveDefaultSelection(emailAccounts) },
+      );
     }
   };
 
@@ -269,7 +295,7 @@ export default function CampaignsPage() {
           <Link href="/outreach" className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">
             <ArrowLeft size={16} /> Назад
           </Link>
-          <button onClick={() => setShowCreate(!showCreate)} className="btn-primary flex w-full sm:w-auto items-center justify-center gap-2">
+          <button onClick={openCreateForm} className="btn-primary flex w-full sm:w-auto items-center justify-center gap-2">
             <Plus size={16} /> Новая кампания
           </button>
         </div>

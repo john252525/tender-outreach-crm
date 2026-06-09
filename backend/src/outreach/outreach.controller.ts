@@ -80,6 +80,11 @@ export class OutreachController {
     return this.outreachService.testEmailAccount(id, user.id);
   }
 
+  @Patch('email-accounts/:id/default')
+  setDefaultEmailAccount(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.outreachService.setDefaultEmailAccount(id, user.id);
+  }
+
   // ===================== LEAD LISTS =====================
 
   @Get('lead-lists')
