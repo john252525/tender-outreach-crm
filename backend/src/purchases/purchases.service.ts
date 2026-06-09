@@ -421,7 +421,10 @@ export class PurchasesService {
     return { data, total };
   }
 
-  async getById(purchaseNumber: string): Promise<Purchase | null> {
+  async getById(
+    purchaseNumber: string,
+    userId?: string,
+  ): Promise<(Purchase & { isFavorite?: boolean }) | null> {
     let purchase = await this.purchaseRepository.findOne({
       where: { purchaseNumber },
       relations: ['files'],
@@ -439,7 +442,18 @@ export class PurchasesService {
       });
     }
 
-    return purchase;
+    if (!purchase) return null;
+
+    let isFavorite = false;
+    if (userId) {
+      const found = await this.foundPurchaseRepository.findOne({
+        where: { userId, purchaseId: purchase.id },
+        select: ['isFavorite'],
+      });
+      isFavorite = !!found?.isFavorite;
+    }
+
+    return { ...purchase, isFavorite };
   }
 
   private async fetchAndStoreDetail(purchase: Purchase): Promise<void> {
@@ -1314,6 +1328,12 @@ export class PurchasesService {
     });
     const purchaseMap = new Map(purchases.map((p) => [p.id, p]));
 
+    const favorites = await this.foundPurchaseRepository.find({
+      where: purchaseIds.map((pid) => ({ userId, purchaseId: pid, isFavorite: true })),
+      select: ['purchaseId'],
+    });
+    const favoriteSet = new Set(favorites.map((f) => f.purchaseId));
+
     const result: Record<string, any> = {};
 
     for (const pid of purchaseIds) {
@@ -1352,6 +1372,7 @@ export class PurchasesService {
         aiResult: ai ? { id: ai.id, subject: ai.subject, body: ai.body, searchTerm: ai.searchTerm ? { id: ai.searchTerm.id, term: ai.searchTerm.term } : null } : null,
         sitesCount,
         emailsCount,
+        isFavorite: favoriteSet.has(pid),
       };
     }
 

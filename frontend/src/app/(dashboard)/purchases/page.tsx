@@ -72,6 +72,14 @@ function clearCache() {
   } catch {}
 }
 
+function deriveFavoritedIds(counts: Record<string, any>): Set<string> {
+  const set = new Set<string>();
+  for (const [id, value] of Object.entries(counts)) {
+    if (value?.isFavorite) set.add(id);
+  }
+  return set;
+}
+
 function formatPrice(price: number | null, currency: string | null): string {
   if (price === null) return '—';
   const formatted = new Intl.NumberFormat('ru-RU', {
@@ -154,6 +162,7 @@ function PurchasesContent() {
       setSkip(parseInt(cachedParams.get('skip') || '0', 10) || 0);
       setResults(cache.results);
       setPipelineCounts(cache.pipelineCounts || {});
+      setFavoritedIds(deriveFavoritedIds(cache.pipelineCounts || {}));
       setSearched(true);
       if (!searchParams.toString()) {
         router.replace(`/purchases?${cache.paramsString}`);
@@ -226,8 +235,10 @@ function PurchasesContent() {
         const ids = data.results.map((p) => p.id).join(',');
         counts = await api.get<Record<string, any>>(`/purchases/pipeline-counts?ids=${ids}`).catch(() => ({}));
         setPipelineCounts(counts);
+        setFavoritedIds(deriveFavoritedIds(counts));
       } else {
         setPipelineCounts({});
+        setFavoritedIds(new Set());
       }
 
       // Save to cache (skip persisted so reopening restores the same page)
@@ -288,6 +299,7 @@ function PurchasesContent() {
       api.get<Record<string, any>>(`/purchases/pipeline-counts?ids=${ids}`)
         .then((counts) => {
           setPipelineCounts(counts);
+          setFavoritedIds(deriveFavoritedIds(counts));
           const cache = loadCache();
           if (cache) saveCache({ ...cache, pipelineCounts: counts });
         })
@@ -301,6 +313,15 @@ function PurchasesContent() {
       setFavoritedIds((prev) => {
         const next = new Set(prev);
         if (res.isFavorite) next.add(purchaseId); else next.delete(purchaseId);
+        return next;
+      });
+      // Keep pipelineCounts (and the cache built from it) in sync so the
+      // star state survives reloads and is correctly restored from cache.
+      setPipelineCounts((prev) => {
+        const existing = prev[purchaseId] || {};
+        const next = { ...prev, [purchaseId]: { ...existing, isFavorite: res.isFavorite } };
+        const cache = loadCache();
+        if (cache) saveCache({ ...cache, pipelineCounts: next });
         return next;
       });
     } catch { /* ignore */ }

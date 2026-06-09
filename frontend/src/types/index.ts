@@ -129,6 +129,7 @@ export interface Purchase {
   detailFetchedAt: string | null;
   createdAt: string;
   files?: PurchaseFile[];
+  isFavorite?: boolean;
 }
 
 export interface PurchaseFile {
