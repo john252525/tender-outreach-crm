@@ -16,10 +16,19 @@ import { EmailBlacklist } from './entities/email-blacklist.entity';
 import { PurchasesService } from './purchases.service';
 import { PurchasesController } from './purchases.controller';
 import { OutreachModule } from '../outreach/outreach.module';
+import { JwtModule } from '@nestjs/jwt';
+import { ApiKeysModule } from '../api-keys/api-keys.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     OutreachModule,
+    // Needed by JwtOrApiKeyAuthGuard (same wiring as OutreachModule)
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'super-secret-key-change-in-production',
+    }),
+    ApiKeysModule,
+    UsersModule,
     TypeOrmModule.forFeature([
       Purchase,
       PurchaseFile,

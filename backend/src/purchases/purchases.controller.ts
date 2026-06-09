@@ -11,17 +11,17 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PurchasesService } from './purchases.service';
 import { SearchPurchasesDto } from './dto/search-purchases.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { JwtOrApiKeyAuthGuard } from '../common/guards/jwt-or-apikey-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 
 @ApiTags('Purchases')
 @ApiBearerAuth()
 @Controller('purchases')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtOrApiKeyAuthGuard)
 export class PurchasesController {
   constructor(private readonly purchasesService: PurchasesService) {}
 
@@ -170,6 +170,37 @@ export class PurchasesController {
     @CurrentUser() user: User,
   ) {
     return this.purchasesService.preparePurchase(purchaseId, user);
+  }
+
+  @Post('magic-approve')
+  @ApiOperation({
+    summary:
+      'Полный цикл по нескольким закупкам: документы → AI → поиск сайтов → email → кампания (+ запуск)',
+  })
+  bulkMagicApprove(
+    @CurrentUser() user: User,
+    @Body() body: { purchaseIds: string[]; launch?: boolean },
+  ) {
+    return this.purchasesService.bulkMagicApprove(
+      body?.purchaseIds || [],
+      user,
+      { launch: body?.launch === true },
+    );
+  }
+
+  @Post(':purchaseId/magic-approve')
+  @ApiOperation({
+    summary:
+      'Полный цикл по одной закупке: документы → AI → поиск сайтов → email → кампания (+ запуск)',
+  })
+  magicApprove(
+    @Param('purchaseId') purchaseId: string,
+    @CurrentUser() user: User,
+    @Body() body: { launch?: boolean },
+  ) {
+    return this.purchasesService.magicApprove(purchaseId, user, {
+      launch: body?.launch === true,
+    });
   }
 
   @Post(':purchaseId/approve-to-outreach')
