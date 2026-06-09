@@ -63,6 +63,12 @@ export class OutreachEmailAccount {
   })
   status: 'active' | 'paused' | 'error';
 
+  // Marks the user's preferred account. Auto-selected when a campaign is
+  // created without an explicit account. At most one per user (enforced in
+  // the service layer).
+  @Column({ name: 'is_default', default: false })
+  isDefault: boolean;
+
   @Column({ name: 'last_error', type: 'text', nullable: true })
   lastError: string | null;
 

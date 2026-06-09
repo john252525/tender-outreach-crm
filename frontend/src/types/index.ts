@@ -433,6 +433,7 @@ export interface OutreachEmailAccount {
   sentTodayDate: string | null;
   isWarmupEnabled: boolean;
   status: 'active' | 'paused' | 'error';
+  isDefault: boolean;
   lastError: string | null;
   signature: string | null;
   smtpRelayUrl: string | null;

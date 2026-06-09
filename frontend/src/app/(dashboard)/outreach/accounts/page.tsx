@@ -19,6 +19,7 @@ import {
   Pencil,
   Save,
   X,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -409,6 +410,22 @@ export default function OutreachAccountsPage() {
     }
   };
 
+  const handleToggleDefault = async (account: OutreachEmailAccount) => {
+    try {
+      const updated = await api.patch<OutreachEmailAccount>(`/outreach/email-accounts/${account.id}/default`, {});
+      // Backend keeps a single default — mirror that by clearing the flag on
+      // every other account when this one becomes the default.
+      setAccounts((prev) =>
+        prev.map((a) => {
+          if (a.id === updated.id) return { ...a, isDefault: updated.isDefault };
+          return updated.isDefault ? { ...a, isDefault: false } : a;
+        }),
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Ошибка');
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -497,6 +514,11 @@ export default function OutreachAccountsPage() {
                             {account.senderName && (
                               <span className="text-xs text-gray-400">({account.senderName})</span>
                             )}
+                            {account.isDefault && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400">
+                                <Star size={10} fill="currentColor" /> По умолчанию
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                             <span className="hidden sm:inline">SMTP: {account.smtpHost}:{account.smtpPort}</span>
@@ -517,6 +539,17 @@ export default function OutreachAccountsPage() {
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 shrink-0 w-full sm:w-auto sm:justify-end">
+                        <button
+                          onClick={() => handleToggleDefault(account)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            account.isDefault
+                              ? 'text-amber-500 hover:text-amber-600'
+                              : 'text-gray-300 hover:text-amber-500 dark:text-gray-600 dark:hover:text-amber-400'
+                          }`}
+                          title={account.isDefault ? 'Аккаунт по умолчанию (нажмите, чтобы снять)' : 'Сделать аккаунтом по умолчанию'}
+                        >
+                          <Star size={16} fill={account.isDefault ? 'currentColor' : 'none'} />
+                        </button>
                         <button
                           onClick={() => handleTest(account.id)}
                           disabled={testingId === account.id}

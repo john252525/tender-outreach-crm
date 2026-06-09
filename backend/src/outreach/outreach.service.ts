@@ -100,10 +100,50 @@ export class OutreachService {
       smtpRelayUrl: string;
     }>,
   ): Promise<OutreachEmailAccount> {
+    // The default flag has its own endpoint to preserve the single-default
+    // invariant — never let it slip in through the generic update.
+    delete (data as Record<string, unknown>).isDefault;
+    delete (data as Record<string, unknown>).is_default;
     await this.emailAccountRepo.update({ id, userId }, data);
     const account = await this.emailAccountRepo.findOne({ where: { id, userId } });
     if (!account) throw new NotFoundException('Аккаунт не найден');
     return account;
+  }
+
+  /**
+   * Sets (or, if already default, unsets) the user's default sending account,
+   * keeping at most one default per user.
+   */
+  async setDefaultEmailAccount(id: string, userId: string): Promise<OutreachEmailAccount> {
+    const account = await this.emailAccountRepo.findOne({ where: { id, userId } });
+    if (!account) throw new NotFoundException('Аккаунт не найден');
+
+    if (account.isDefault) {
+      await this.emailAccountRepo.update({ id, userId }, { isDefault: false });
+    } else {
+      await this.emailAccountRepo.update({ userId }, { isDefault: false });
+      await this.emailAccountRepo.update({ id, userId }, { isDefault: true });
+    }
+
+    const updated = await this.emailAccountRepo.findOne({ where: { id, userId } });
+    return updated!;
+  }
+
+  /**
+   * Resolves which account(s) a new campaign should use when none were chosen
+   * explicitly: the marked default if active, otherwise the only active
+   * account if there is exactly one, otherwise none (caller must pick).
+   */
+  async resolveDefaultEmailAccountIds(userId: string): Promise<string[]> {
+    const active = await this.emailAccountRepo.find({
+      where: { userId, status: 'active' },
+      order: { createdAt: 'ASC' },
+    });
+    if (active.length === 0) return [];
+    const explicit = active.find((a) => a.isDefault);
+    if (explicit) return [explicit.id];
+    if (active.length === 1) return [active[0].id];
+    return [];
   }
 
   async deleteEmailAccount(id: string, userId: string): Promise<void> {
@@ -314,11 +354,19 @@ export class OutreachService {
       trackOpens?: boolean;
     },
   ): Promise<OutreachCampaign> {
+    // Auto-select the default account when the caller didn't specify any, so
+    // campaigns created via the UI form, approve-to-outreach, or the API all
+    // come out ready to launch without a manual account pick.
+    let emailAccountIds = data.emailAccountIds;
+    if (!emailAccountIds || emailAccountIds.length === 0) {
+      emailAccountIds = await this.resolveDefaultEmailAccountIds(userId);
+    }
+
     const campaign = this.campaignRepo.create({
       userId,
       name: data.name,
       leadListId: data.leadListId || null,
-      emailAccountIds: data.emailAccountIds || [],
+      emailAccountIds,
       dailySendLimit: data.dailySendLimit || 50,
       sendFromHour: data.sendFromHour ?? 9,
       sendToHour: data.sendToHour ?? 18,
